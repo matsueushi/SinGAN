@@ -42,26 +42,15 @@ end
 end
 
 @testset "Generator" begin
-    pyramid = SinGAN.size_pyramid(4/3, (32, 32), (42, 42))
-    gen = SinGAN.Generator(pyramid, 5)
+    image_shapes = [(32, 32), (42, 42)]
+    gen = SinGAN.Generator(image_shapes, 5)
     @info gen
-    noise_size = (32, 32, 3, 1)
-    noise = randn(Float32, noise_size)
-    @test typeof(gen(noise, 0, false)) <: AbstractArray{Float32, 4}
-    @test size(gen(noise, 0, false)) == (32, 32, 3, 1)
-    @test size(gen(noise, 0, true)) == (32, 32, 3, 1)
-    @test size(gen(noise, 1, false)) == (32, 32, 3, 1)
-    @test size(gen(noise, 1, true)) == (42, 42, 3, 1)
-    @test size(gen(noise, 2, false)) == (42, 42, 3, 1)
-    @test size(gen(noise, 2, true)) == (42, 42, 3, 1)
-
-    adv_noise = [randn(Float32, 42, 42, 3, 1)]
-    @test typeof(gen(noise, adv_noise, 2, false)) <: AbstractArray{Float32, 4}
-    @test size(gen(noise, [], 1, false)) == (32, 32, 3, 1)
-    @test size(gen(noise, [], 1, true)) == (42, 42, 3, 1)
-    @test size(gen(noise, adv_noise, 2, false)) == (42, 42, 3, 1)
-    @test size(gen(noise, adv_noise, 2, true)) == (42, 42, 3, 1)
-
+    @test gen.noise_shapes == [(42, 42), (52, 52)]
+    xs1 = [randn(Float32, 42, 42, 3, 1)]
+    @test size(gen(xs1, false)) == (32, 32, 3, 1)
+    @test size(gen(xs1, true)) == (42, 42, 3, 1)
+    xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 52, 52, 3, 1)]
+    @test size(gen(xs2, false)) == (42, 42, 3, 1)
 end
 
 # utils

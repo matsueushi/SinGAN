@@ -76,44 +76,81 @@ end
     Generator
 """
 mutable struct Generator{T<:Tuple}
-    pyramid::Vector{Tuple{Int64, Int64}}
+    image_shapes::Vector{Tuple{Int64, Int64}}
+    noise_shapes::Vector{Tuple{Int64, Int64}}
+    pad::Int64
     chains::T
-    Generator(pyramid, xs...) = new{typeof(xs)}(pyramid, gpu.(xs))
+    Generator(image_shapes, noise_shapes, pad, xs...) = new{typeof(xs)}(image_shapes, noise_shapes, pad, gpu.(xs))
 end
 
 build_single_generator(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
 
-function Generator(pyramid, n_layers::Integer)
-    n_stage = Base.length(pyramid)
+function Generator(image_shapes, n_layers::Integer; pad::Integer = 5)
+    n_stage = Base.length(image_shapes)
+    # receptive field = 11, floor(11/2) = 5
+    noise_shapes = [2 * pad .+ s for s in image_shapes]
     ds = build_single_generator.(n_layers, channel_pyramid(n_stage))
-    return Generator(pyramid, ds...)
+    return Generator(image_shapes, noise_shapes, pad, ds...)
 end
 
 function Base.show(io::IO, d::Generator)
     print(io, "Generator(")
-    join(io, d.chains, ", \n")
+    print(io, d.image_shapes, ", ")
+    print(io, d.noise_shapes, ", ")
+    print(io, d.pad, ", ")
+    println(io, d.chains, ",")
     print(io, ")")
 end
 
-# rec
-function (gen::Generator)(x, stage::Integer, resize::Bool)
-    for (i, ch) in enumerate(gen.chains[1:stage])
-        x = ch(x) + x
-        if (i != stage) || ((i != Base.length(gen.chains)) && resize)
-            x = zoom_image(x |> cpu, gen.pyramid[i + 1]) |> gpu
-        end
-    end
-    return x
+function generate(chains::Chain, img::T, noise::T, pad::Integer) where {T<:AbstractArray{Float32,4}}
+    y = zero(noise)
+    y[1 + pad:end-pad, 1 + pad:end-pad, :, :] = img
+    y += noise
+    return chains(y)[1 + pad:end-pad, 1 + pad:end-pad, :, :] + img
 end
 
 # adv
-function (gen::Generator)(x, adv_noise, stage::Integer, resize::Bool)
-    @assert Base.length(adv_noise) == stage - 1
-    for (i, ch) in enumerate(gen.chains[1:stage])
-        x = i == 1 ? ch(x) + x : ch(x + adv_noise[i - 1]) + x
-        if (i != stage) || ((i != Base.length(gen.chains)) && resize)
-            x = zoom_image(x |> cpu, gen.pyramid[i + 1]) |> gpu
+function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
+    img = fill!(similar(first(xs), first(gen.image_shapes)..., 3, 1), 0f0)
+    n = Base.length(xs)
+    for (i, x) in enumerate(xs)
+        img = generate(gen.chains[i], img, x, gen.pad)
+        if i != n || (i == n && resize)
+            img = adapt(img, zoom_image(adapt(Array, img), gen.image_shapes[i + 1]))
         end
     end
-    return x
+    return img
 end
+
+# rec
+function (gen::Generator)(x::AbstractArray{Float32,4}, resize::Bool)
+
+end
+
+
+
+# rec generation
+
+
+# rec
+# function (gen::Generator)(x::T, stage::Integer, resize::Bool)::T where {T<:AbstractArray{Float32,4}}
+#     for (i, ch) in enumerate(gen.chains[1:stage])
+#         x = ch(x) + x
+#         if (i != stage) || ((i != Base.length(gen.chains)) && resize)
+#             x = zoom_image(x |> cpu, gen.pyramid[i + 1]) |> gpu
+#         end
+#     end
+#     return x
+# end
+
+# # adv
+# function (gen::Generator)(x::T, adv_noise, stage::Integer, resize::Bool)::T where {T<:AbstractArray{Float32,4}}
+#     @assert Base.length(adv_noise) == stage - 1
+#     for (i, ch) in enumerate(gen.chains[1:stage])
+#         x = i == 1 ? ch(x) + x : ch(x + adv_noise[i - 1]) + x
+#         if (i != stage) || ((i != Base.length(gen.chains)) && resize)
+#             x = zoom_image(x |> cpu, gen.pyramid[i + 1]) |> gpu
+#         end
+#     end
+#     return x
+# end

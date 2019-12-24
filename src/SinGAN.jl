@@ -1,5 +1,7 @@
 module SinGAN
 
+using Adapt
+using CuArrays
 using Flux
 using Interpolations
 
