@@ -10,5 +10,6 @@ export Discriminator, Generator
 
 include("models.jl")
 include("utils.jl")
+include("train.jl")
 
 end # module

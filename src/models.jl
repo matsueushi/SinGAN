@@ -121,16 +121,3 @@ function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{F
     end
     return img
 end
-
-similar_zero_pyramid(xs, shapes::Vector{Tuple{Int64,Int64}}) = [fill!(similar(xs, expand_dim(s)), 0f0) for s in shapes]
-
-function noise_vector_generation(xs, noise_shapes::Vector{Tuple{Int64,Int64}}, amplifiers::Vector{Float32})
-    return [amp * randn!(similar(xs, expand_dim(s))) for (s, amp) in zip(noise_shapes, amplifiers)]
-end
-
-function rec_vector_generation(xs, noise_shapes::Vector{Tuple{Int64,Int64}}, amplifier::Float32)
-    v = similar_zero_pyramid(xs, noise_shapes)
-    randn!(v[1])
-    v[1] *= amplifier
-    return v
-end
