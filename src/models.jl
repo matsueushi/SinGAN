@@ -97,8 +97,8 @@ function Base.show(io::IO, d::Generator)
     print(io, "Generator(")
     print(io, d.image_shapes, ", ")
     print(io, d.noise_shapes, ", ")
-    print(io, d.pad, ", ")
-    println(io, d.chains, ",")
+    println(io, d.pad, ", ")
+    join(io, d.chains, ", \n")
     print(io, ")")
 end
 
@@ -111,7 +111,7 @@ end
 
 # adv
 function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
-    img = fill!(similar(first(xs), first(gen.image_shapes)..., 3, 1), 0f0)
+    img = fill!(similar(first(xs), expand_dim(first(gen.image_shapes))), 0f0)
     n = Base.length(xs)
     for (i, x) in enumerate(xs)
         img = generate(gen.chains[i], img, x, gen.pad)
@@ -122,35 +122,15 @@ function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{F
     return img
 end
 
-# rec
-function (gen::Generator)(x::AbstractArray{Float32,4}, resize::Bool)
+similar_zero_pyramid(xs, shapes::Vector{Tuple{Int64,Int64}}) = [fill!(similar(xs, expand_dim(s)), 0f0) for s in shapes]
 
+function noise_vector_generation(xs, noise_shapes::Vector{Tuple{Int64,Int64}}, amplifiers::Vector{Float32})
+    return [amp * randn!(similar(xs, expand_dim(s))) for (s, amp) in zip(noise_shapes, amplifiers)]
 end
 
-
-
-# rec generation
-
-
-# rec
-# function (gen::Generator)(x::T, stage::Integer, resize::Bool)::T where {T<:AbstractArray{Float32,4}}
-#     for (i, ch) in enumerate(gen.chains[1:stage])
-#         x = ch(x) + x
-#         if (i != stage) || ((i != Base.length(gen.chains)) && resize)
-#             x = zoom_image(x |> cpu, gen.pyramid[i + 1]) |> gpu
-#         end
-#     end
-#     return x
-# end
-
-# # adv
-# function (gen::Generator)(x::T, adv_noise, stage::Integer, resize::Bool)::T where {T<:AbstractArray{Float32,4}}
-#     @assert Base.length(adv_noise) == stage - 1
-#     for (i, ch) in enumerate(gen.chains[1:stage])
-#         x = i == 1 ? ch(x) + x : ch(x + adv_noise[i - 1]) + x
-#         if (i != stage) || ((i != Base.length(gen.chains)) && resize)
-#             x = zoom_image(x |> cpu, gen.pyramid[i + 1]) |> gpu
-#         end
-#     end
-#     return x
-# end
+function rec_vector_generation(xs, noise_shapes::Vector{Tuple{Int64,Int64}}, amplifier::Float32)
+    v = similar_zero_pyramid(xs, noise_shapes)
+    randn!(v[1])
+    v[1] *= amplifier
+    return v
+end

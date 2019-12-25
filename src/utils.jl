@@ -1,3 +1,5 @@
+expand_dim(t::Tuple{Int64,Int64}) = (t..., 3, 1)
+
 function zoom_image(x::Array{Float32, 4}, imsize::Tuple{Int64, Int64})
     itp = interpolate(x, (BSpline(Linear()), BSpline(Linear()), NoInterp(), NoInterp()))
     ss = Float32.(size(x))

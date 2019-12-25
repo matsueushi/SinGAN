@@ -4,6 +4,7 @@ using Adapt
 using CuArrays
 using Flux
 using Interpolations
+using Random
 
 export Discriminator, Generator
 
