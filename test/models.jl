@@ -31,7 +31,12 @@ end
 end
 
 @testset "NoiseConnection" begin
-    @info SinGAN.NoiseConnection(Dense(1, 1), [1])
+    nc = SinGAN.NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
+    @info nc
+    prev = randn(Float32, 32, 32, 3, 1)
+    noise = randn(Float32, 42, 42, 3, 1)
+    @test size(nc(prev, noise)) == size(prev)
+    # @code_warntype nc(prev, noise)
 end
 
 @testset "Generator" begin

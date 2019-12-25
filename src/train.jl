@@ -29,12 +29,29 @@ end
 """
     update generator
 """
-function update_generator!(opt, gen, dscr, real_image, prev, noise, alpha)::Float32
+function update_generator!(opt, nc_gen, dscr, real_img, prev, noise, alpha)::Float32
     @eval Flux.istraining() = true
-    ps = params(gen)
+    ps = params(nc_gen)
     loss, back = pullback(ps) do
-        g_fake = generate(gen, prev, noise)
+        g_fake = nc_gen(prev, noise)
+        d_g_fake = dscr(g_fake)
+        generator_adv_loss(d_g_fake) + alpha * generator_rec_loss(real_img, g_fake)
     end
+    grad = back(1f0)
+    update!(opt, ps, grad)
     @eval Flux.istraining() = false
+    return loss
 end
 
+"""
+    train discriminator
+"""
+function train_discriminator()
+    
+
+end
+
+
+"""
+    train generator
+"""

@@ -59,17 +59,22 @@ end
 """
 mutable struct NoiseConnection
     layers
-    prev
+    pad::Int64
 end
 
 @Flux.functor NoiseConnection
 
-function (skip::NoiseConnection)(input)
-    skip.layers(input + prev) + prev
+function (skip::NoiseConnection)(prev, noise)
+    # padding
+    d = size(prev, 3)
+    pad = skip.pad
+    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
+    raw_output = skip.layers(noise + c(prev))
+    return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :] + prev
 end
 
 function Base.show(io::IO, b::NoiseConnection)
-    print(io, "NoiseConnection(", b.layers, ")")
+    print(io, "NoiseConnection(", b.layers, ", ", b.pad, ")")
 end
 
 """
@@ -84,12 +89,15 @@ mutable struct Generator{T<:Tuple}
 end
 
 build_single_generator(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
+function build_single_nc_generator(n_layers, conv_chs, pad)
+    NoiseConnection(build_single_generator(n_layers, conv_chs), pad)
+end
 
 function Generator(image_shapes, n_layers::Integer; pad::Integer = 5)
     n_stage = Base.length(image_shapes)
     # receptive field = 11, floor(11/2) = 5
     noise_shapes = [2 * pad .+ s for s in image_shapes]
-    ds = build_single_generator.(n_layers, channel_pyramid(n_stage))
+    ds = build_single_nc_generator.(n_layers, channel_pyramid(n_stage), pad)
     return Generator(image_shapes, noise_shapes, pad, ds...)
 end
 
@@ -102,20 +110,11 @@ function Base.show(io::IO, d::Generator)
     print(io, ")")
 end
 
-function generate(chains::Chain, img::T, noise::T) where {T<:AbstractArray{Float32,4}}
-    pad1, pad2 = (size(noise) .- size(img))[1:2] .÷ 2
-    y = zero(noise)
-    y[1 + pad1:end-pad1, 1 + pad2:end-pad2, :, :] = img
-    y += noise
-    return chains(y)[1 + pad1:end-pad1, 1 + pad2:end-pad2, :, :] + img
-end
-
-# adv
 function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
     img = fill!(similar(first(xs), expand_dim(first(gen.image_shapes))), 0f0)
     n = Base.length(xs)
     for (i, x) in enumerate(xs)
-        img = generate(gen.chains[i], img, x)
+        img = gen.chains[i](img, x)
         if i != n || (i == n && resize)
             img = adapt(img, zoom_image(adapt(Array, img), gen.image_shapes[i + 1]))
         end
