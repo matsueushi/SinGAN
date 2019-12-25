@@ -24,3 +24,12 @@ end
     @test SinGAN.generator_adv_loss(d_g_fake) ≈ 0f0
     @inferred Float32 SinGAN.generator_adv_loss(d_g_fake)
 end
+
+@testset "update_discriminator!" begin
+    dscr = SinGAN.build_single_discriminator(3, 32)
+    real_img = ones(Float32, 2, 2, 3, 1)
+    g_fake = randn(Float32, 2, 2, 3, 1)
+    opt = ADAM(0.0005f0)
+    @inferred Float32 SinGAN.update_discriminator!(opt, dscr, real_img, g_fake)
+    @code_warntype(SinGAN.update_discriminator!(opt, dscr, real_img, g_fake))
+end

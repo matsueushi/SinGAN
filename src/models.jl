@@ -102,11 +102,12 @@ function Base.show(io::IO, d::Generator)
     print(io, ")")
 end
 
-function generate(chains::Chain, img::T, noise::T, pad::Integer) where {T<:AbstractArray{Float32,4}}
+function generate(chains::Chain, img::T, noise::T) where {T<:AbstractArray{Float32,4}}
+    pad1, pad2 = (size(noise) .- size(img))[1:2] .÷ 2
     y = zero(noise)
-    y[1 + pad:end-pad, 1 + pad:end-pad, :, :] = img
+    y[1 + pad1:end-pad1, 1 + pad2:end-pad2, :, :] = img
     y += noise
-    return chains(y)[1 + pad:end-pad, 1 + pad:end-pad, :, :] + img
+    return chains(y)[1 + pad1:end-pad1, 1 + pad2:end-pad2, :, :] + img
 end
 
 # adv
@@ -114,7 +115,7 @@ function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{F
     img = fill!(similar(first(xs), expand_dim(first(gen.image_shapes))), 0f0)
     n = Base.length(xs)
     for (i, x) in enumerate(xs)
-        img = generate(gen.chains[i], img, x, gen.pad)
+        img = generate(gen.chains[i], img, x)
         if i != n || (i == n && resize)
             img = adapt(img, zoom_image(adapt(Array, img), gen.image_shapes[i + 1]))
         end
