@@ -34,22 +34,22 @@ function build_layer(n_layers, in_chs, conv_chs, out_chs, σ)
 end
 
 """
-    Discriminator
+    DiscriminatorPyramid
 """
-mutable struct Discriminator{T<:Tuple}
+mutable struct DiscriminatorPyramid{T<:Tuple}
     chains::T
-    Discriminator(xs...) = new{typeof(xs)}(gpu.(xs))
+    DiscriminatorPyramid(xs...) = new{typeof(xs)}(xs)
 end
 
 build_single_discriminator(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 1, identity)
 
-function Discriminator(n_stage::Integer, n_layers::Integer)
+function DiscriminatorPyramid(n_stage::Integer, n_layers::Integer)
     ds = build_single_discriminator.(n_layers, channel_pyramid(n_stage))
-    return Discriminator(ds...)
+    return DiscriminatorPyramid(ds...)
 end
 
-function Base.show(io::IO, d::Discriminator)
-    print(io, "Discriminator(")
+function Base.show(io::IO, d::DiscriminatorPyramid)
+    print(io, "DiscriminatorPyramid(")
     join(io, d.chains, ", \n")
     print(io, ")")
 end
@@ -64,45 +64,55 @@ end
 
 @Flux.functor NoiseConnection
 
-function (skip::NoiseConnection)(prev, noise)
+# adv connection
+function (nc::NoiseConnection)(prev, noise)
     # padding
     d = size(prev, 3)
-    pad = skip.pad
+    pad = nc.pad
     c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
-    raw_output = skip.layers(noise + c(prev))
+    raw_output = nc.layers(noise + c(prev))
     return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :] + prev
 end
 
-function Base.show(io::IO, b::NoiseConnection)
-    print(io, "NoiseConnection(", b.layers, ", ", b.pad, ")")
+# rec connection
+function (nc::NoiseConnection)(prev)
+    # padding
+    d = size(prev, 3)
+    pad = nc.pad
+    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
+    return nc.layers(c(prev))[1 + pad:end-pad, 1 + pad:end-pad, :, :]
+end
+
+function Base.show(io::IO, nc::NoiseConnection)
+    print(io, "NoiseConnection(", nc.layers, ", ", nc.pad, ")")
 end
 
 """
-    Generator
+    GeneratorPyramid
 """
-mutable struct Generator{T<:Tuple}
+mutable struct GeneratorPyramid{T<:Tuple}
     image_shapes::Vector{Tuple{Int64, Int64}}
     noise_shapes::Vector{Tuple{Int64, Int64}}
     pad::Int64
     chains::T
-    Generator(image_shapes, noise_shapes, pad, xs...) = new{typeof(xs)}(image_shapes, noise_shapes, pad, gpu.(xs))
+    GeneratorPyramid(image_shapes, noise_shapes, pad, xs...) = new{typeof(xs)}(image_shapes, noise_shapes, pad, xs)
 end
 
-build_single_generator(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
-function build_single_nc_generator(n_layers, conv_chs, pad)
-    NoiseConnection(build_single_generator(n_layers, conv_chs), pad)
+build_single_gen_layers(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
+function build_single_generator(n_layers, conv_chs, pad)
+    NoiseConnection(build_single_gen_layers(n_layers, conv_chs), pad)
 end
 
-function Generator(image_shapes, n_layers::Integer; pad::Integer = 5)
+function GeneratorPyramid(image_shapes, n_layers::Integer; pad::Integer = 5)
     n_stage = Base.length(image_shapes)
     # receptive field = 11, floor(11/2) = 5
     noise_shapes = [2 * pad .+ s for s in image_shapes]
-    ds = build_single_nc_generator.(n_layers, channel_pyramid(n_stage), pad)
-    return Generator(image_shapes, noise_shapes, pad, ds...)
+    ds = build_single_generator.(n_layers, channel_pyramid(n_stage), pad)
+    return GeneratorPyramid(image_shapes, noise_shapes, pad, ds...)
 end
 
-function Base.show(io::IO, d::Generator)
-    print(io, "Generator(")
+function Base.show(io::IO, d::GeneratorPyramid)
+    print(io, "GeneratorPyramid(")
     print(io, d.image_shapes, ", ")
     print(io, d.noise_shapes, ", ")
     println(io, d.pad, ", ")
@@ -110,7 +120,7 @@ function Base.show(io::IO, d::Generator)
     print(io, ")")
 end
 
-function (gen::Generator)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
+function (gen::GeneratorPyramid)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
     img = fill!(similar(first(xs), expand_dim(first(gen.image_shapes))), 0f0)
     n = Base.length(xs)
     for (i, x) in enumerate(xs)

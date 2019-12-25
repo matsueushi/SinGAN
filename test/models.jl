@@ -18,16 +18,16 @@ end
     @test size(dscr(noise)) == (64, 64, 1, 10)
 end
 
-@testset "build_single_generator" begin
+@testset "build_single_gen_layers" begin
     noise_size = (64, 64, 3, 10)
     noise = randn(Float32, noise_size)
-    gen = SinGAN.build_single_generator(5, 128)
+    gen = SinGAN.build_single_gen_layers(5, 128)
     @info gen
     @test size(gen(noise)) == (64, 64, 3, 10)
 end
 
-@testset "Discriminator" begin
-    @info SinGAN.Discriminator(4, 5)
+@testset "DiscriminatorPyramid" begin
+    @info SinGAN.DiscriminatorPyramid(4, 5)
 end
 
 @testset "NoiseConnection" begin
@@ -37,16 +37,17 @@ end
     noise = randn(Float32, 42, 42, 3, 1)
     @test size(nc(prev, noise)) == size(prev)
     # @code_warntype nc(prev, noise)
+    @test size(nc(prev)) == size(prev)
 end
 
-@testset "Generator" begin
+@testset "GeneratorPyramid" begin
     image_shapes = [(32, 32), (42, 42)]
-    gen = SinGAN.Generator(image_shapes, 5)
-    @info gen
-    @test gen.noise_shapes == [(42, 42), (52, 52)]
+    genp = SinGAN.GeneratorPyramid(image_shapes, 5)
+    @info genp
+    @test genp.noise_shapes == [(42, 42), (52, 52)]
     xs1 = [randn(Float32, 42, 42, 3, 1)]
-    @test size(gen(xs1, false)) == (32, 32, 3, 1)
-    @test size(gen(xs1, true)) == (42, 42, 3, 1)
+    @test size(genp(xs1, false)) == (32, 32, 3, 1)
+    @test size(genp(xs1, true)) == (42, 42, 3, 1)
     xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 52, 52, 3, 1)]
-    @test size(gen(xs2, false)) == (42, 42, 3, 1)
+    @test size(genp(xs2, false)) == (42, 42, 3, 1)
 end

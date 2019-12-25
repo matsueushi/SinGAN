@@ -8,7 +8,7 @@ using Flux.Optimise: update!
 using Interpolations
 using Random
 
-export Discriminator, Generator
+export DiscriminatorPyramid, GeneratorPyramid
 
 include("models.jl")
 include("utils.jl")
