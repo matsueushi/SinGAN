@@ -5,13 +5,13 @@ using CuArrays
 using Flux
 using Flux: mse, pullback
 using Flux.Optimise: update!
-using Interpolations
 using Random
 
-export DiscriminatorPyramid, GeneratorPyramid
+export DiscriminatorPyramid, GeneratorPyramid, train!
 
 include("models.jl")
 include("utils.jl")
 include("train.jl")
+include("saveload.jl")
 
 end # module

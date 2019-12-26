@@ -16,7 +16,9 @@
 
     max_epoch = 20
     reduce_lr_epoch = 16
-    
+    save_image_every_epoch = 500
+    save_loss_every_epoch = 100
+
     # max_epoch = 2000
     # reduce_lr_epoch = 1600
 
@@ -28,6 +30,7 @@
     
     alpha = 50f0
 
-    SinGAN.train!(dscrp, genp, real_img_p, max_epoch, reduce_lr_epoch,
+    SinGAN.train!(dscrp, genp, real_img_p, 
+        max_epoch, reduce_lr_epoch, save_image_every_epoch, save_loss_every_epoch,
         loop_dscr, loop_gen, lr_dscr, lr_gen, alpha)
 end
