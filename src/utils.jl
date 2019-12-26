@@ -17,7 +17,7 @@ function zoom_image(x::CuArray{Float32,4}, imsize::Tuple{Int64,Int64})
     return cu(zoom_image(adapt(Array{Float32}, x), imsize))
 end
 
-function image_pyramid_generation(img::Array{Float32,4}, image_shapes)
+function image_pyramid_generation(img::AbstractArray{Float32,4}, image_shapes)
     return [zoom_image(img, s) for s in image_shapes]
 end
 

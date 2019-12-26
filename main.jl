@@ -19,7 +19,7 @@ function main()
     orig_rgb_img = load("artwork.jpg")
     orig_img = SinGAN.rgb_to_array(orig_rgb_img) |> gpu
 
-    real_img_p = gpu.(SinGAN.image_pyramid_generation(orig_img, image_shapes))
+    real_img_p = SinGAN.image_pyramid_generation(orig_img, image_shapes)
 
     max_epoch = 20
     reduce_lr_epoch = 16

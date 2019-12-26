@@ -45,7 +45,7 @@ build_single_discriminator(n_layers, conv_chs) = build_layer(n_layers, 3, conv_c
 
 function DiscriminatorPyramid(n_stage::Integer, n_layers::Integer)
     ds = build_single_discriminator.(n_layers, channel_pyramid(n_stage))
-    return DiscriminatorPyramid(ds...)
+    return DiscriminatorPyramid(gpu.(ds)...)
 end
 
 function Base.show(io::IO, d::DiscriminatorPyramid)
@@ -64,23 +64,33 @@ end
 
 @Flux.functor NoiseConnection
 
+function zero_padding(x::Array{Float32,4}, pad)
+    # padding
+    d = size(x, 3)
+    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
+    return c(x)
+end
+
+function zero_padding(x::CuArray{Float32,4}, pad)
+    # padding
+    d = size(x, 3)
+    c = Flux.fmap(CuArrays.cu, DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones))
+    return c(x)
+end
+
 # adv connection
 function (nc::NoiseConnection)(prev, noise)
-    # padding
-    d = size(prev, 3)
     pad = nc.pad
-    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
-    raw_output = nc.layers(noise + c(prev))
+    prev_pad = zero_padding(prev, pad)
+    raw_output = nc.layers(noise + prev_pad)
     return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :] + prev
 end
 
 # rec connection
 function (nc::NoiseConnection)(prev)
-    # padding
-    d = size(prev, 3)
     pad = nc.pad
-    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
-    return nc.layers(c(prev))[1 + pad:end-pad, 1 + pad:end-pad, :, :]
+    prev_pad = zero_padding(prev, pad)
+    return nc.layers(prev_pad)[1 + pad:end-pad, 1 + pad:end-pad, :, :]
 end
 
 function Base.show(io::IO, nc::NoiseConnection)
@@ -108,7 +118,7 @@ function GeneratorPyramid(image_shapes, n_layers::Integer; pad::Integer = 5)
     # receptive field = 11, floor(11/2) = 5
     noise_shapes = [2 * pad .+ s for s in image_shapes]
     ds = build_single_generator.(n_layers, channel_pyramid(n_stage), pad)
-    return GeneratorPyramid(image_shapes, noise_shapes, pad, ds...)
+    return GeneratorPyramid(image_shapes, noise_shapes, pad, gpu.(ds)...)
 end
 
 function Base.show(io::IO, d::GeneratorPyramid)
