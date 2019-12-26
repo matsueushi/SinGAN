@@ -45,9 +45,10 @@ end
     genp = SinGAN.GeneratorPyramid(image_shapes, 5)
     @info genp
     @test genp.noise_shapes == [(42, 42), (52, 52)]
-    xs1 = [randn(Float32, 42, 42, 3, 1)]
+    xs1 = [randn(Float32, 42, 42, 3, 1)] |> gpu
+    @code_warntype genp(xs1, false)
     @test size(genp(xs1, false)) == (32, 32, 3, 1)
     @test size(genp(xs1, true)) == (42, 42, 3, 1)
-    xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 52, 52, 3, 1)]
+    xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 52, 52, 3, 1)] |> gpu
     @test size(genp(xs2, false)) == (42, 42, 3, 1)
 end

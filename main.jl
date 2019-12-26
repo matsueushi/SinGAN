@@ -4,6 +4,17 @@ using FileIO
 using Flux
 
 function main()
+
+    function zero_padding2(x::CuArray{Float32,4}, pad)
+        println(typeof(x))
+        # padding
+        d = size(x, 3)
+        c = DepthwiseConv((2, 2), d => d, pad = pad; init=Flux.ones) |> gpu
+        return c(x)
+    end
+
+    zero_padding2(Flux.cu(randn(Float32, 2,2,2,2)), 5)
+
     scale = 4/3
     min_size = (16, 16)
     image_size = (20, 20)

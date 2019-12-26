@@ -74,7 +74,7 @@ end
 function zero_padding(x::CuArray{Float32,4}, pad)
     # padding
     d = size(x, 3)
-    c = Flux.fmap(CuArrays.cu, DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones))
+    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
     return c(x)
 end
 
