@@ -6,7 +6,7 @@ Run
 sudo docker build -t matsueushi/juliagpu . 
 sudo docker run --name juliagpu --gpus all -it -v $PWD:/tmp -w /tmp matsueushi/juliagpu:latest /bin/bash
 sudo docker exec -it juliagpu /bin/bash
-julia -e "using Pkg; Pkg.activate(); Pkg.instantiate()"
+julia --project -e "using Pkg; Pkg.activate(); Pkg.instantiate()"
 julia --project main.jl
 ```
 
