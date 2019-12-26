@@ -1,6 +1,7 @@
 module SinGAN
 
 using Adapt
+using BSON: @load, @save
 using CuArrays
 using Flux
 using Flux: mse, pullback

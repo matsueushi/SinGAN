@@ -116,15 +116,17 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
             rmse = sqrt(mse(real_img_p[st], g_fake_rec))
             amp = rmse * amplifier_init
             push!(amplifiers, amp)
-            @info "Noise amplifier: $(amp)"
             # add noise for animation
             push!(adv_noise_anime, amp * randn!(similar(g_fake_rec, expand_dim(genp.noise_shapes[st]))))
 
             prev_rec = g_fake_rec
         else
-            @info "Noise amplifier: $(amplifier_init)"
+            amp = amplifier_init
             prev_rec = zero(first(real_img_p)) 
         end
+
+        save_noise_amplifiers(st, amp)
+        @info "Noise amplifier: $(amp)"
 
         for ep in 1:max_epoch
             # reduce learnint rate
@@ -151,5 +153,13 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
                 save_training_loss(st, ep, loss_dscr, loss_gen_adv, loss_gen_rec)
             end
         end
+
+        dscr = dscrp.chains[st] |> cpu
+        @save discriminator_savepath(i) dscr
+
+        gen = genp.chains[st]|> cpu
+        @save generator_savepath(i) gen
     end
+
+    return amplifiers
 end

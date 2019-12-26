@@ -1,3 +1,4 @@
+using DelimitedFiles
 using Printf
 
 """
@@ -62,5 +63,42 @@ function save_scaled_reals(real_img_p)
     # save real images
     for (n, img) in enumerate(real_img_p)
         save_array_as_image(scaled_real_savepath(n), img[:, :, :, 1])
+    end
+end
+
+function save_noise_amplifiers(st, noise_amplifier)
+    path = "./output/noise_amplifiers.csv"
+    if st == 1
+        open(path, "w") do io
+            write(io, "noise_amplifiers\n")
+        end
+    end
+
+    open(path, "a") do io
+        write(io, @sprintf("%06f\n", noise_amplifier))
+    end
+end
+
+function load_with_batchnorm!(chain::Chain, data)
+    Flux.loadparams!(chain, params(data))
+    for (lm, l) in zip(chain, data)
+        if isa(l, BatchNorm)
+            copyto!(lm.μ, l.μ)
+            copyto!(lm.σ², l.σ²)
+        end
+    end
+end
+
+function load_amplifiers()
+    return
+end
+
+function load_model_params!(dscrp, genp, max_stage)
+    for i in 1:max_stage
+        @load discriminator_savepath(i) dscr
+        load_with_batchnorm!(dscrp.chain[i], dscr |> gpu)
+
+        @load generator_savepath(i) gen
+        load_with_batchnorm!(genp.chain[i], gen |> gpu)
     end
 end

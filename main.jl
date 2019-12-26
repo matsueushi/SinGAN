@@ -12,12 +12,12 @@ function main()
     n_stage = Base.length(image_shapes)
     n_layers = 3
 
-    dscrp = DiscriminatorPyramid(n_stage, n_layers)
-    genp = GeneratorPyramid(image_shapes, n_layers)
+    dscrp = DiscriminatorPyramid(n_stage, n_layers) |> gpu
+    genp = GeneratorPyramid(image_shapes, n_layers) |> gpu
 
     # orig_img = randn(Float32, SinGAN.expand_dim(image_size))
     orig_rgb_img = load("artwork.jpg")
-    orig_img = SinGAN.rgb_to_array(orig_rgb_img)
+    orig_img = SinGAN.rgb_to_array(orig_rgb_img) |> gpu
 
     real_img_p = gpu.(SinGAN.image_pyramid_generation(orig_img, image_shapes))
 
