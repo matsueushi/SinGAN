@@ -89,9 +89,9 @@ end
 function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
         max_epoch, reduce_lr_epoch, save_image_every_epoch, save_loss_every_epoch,
         loop_dscr, loop_gen, lr_dscr, lr_gen, alpha)
-    
     stages = Base.length(genp.image_shapes)
     generate_dirs(stages)
+    save_scaled_reals(real_img_p)
 
     @info dscrp
     @info genp
@@ -129,7 +129,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
         for ep in 1:max_epoch
             # reduce learnint rate
             if ep == reduce_lr_epoch
-                @info "Redule learning rate"
+                @info "Reduce learning rate"
                 opt_dscr.eta /= 10
                 opt_gen.eta /= 10
             end

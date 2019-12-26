@@ -12,6 +12,6 @@ export DiscriminatorPyramid, GeneratorPyramid, train!
 include("models.jl")
 include("utils.jl")
 include("train.jl")
-include("saveload.jl")
+include("loadsave.jl")
 
 end # module

@@ -13,7 +13,7 @@ function rgb_to_array(img_rgb)
     return reshape(array, size(array)..., 1)
 end
 
-function save_array_as_image(path::String, array::AbstractArray{Float32,3})
+function save_array_as_image(path, array::AbstractArray{Float32,3})
     array = clamp.(array, -1f0, 1f0)
     img = permutedims(array, (3, 1, 2)) |> cpu
     img = (img .+ 1f0) ./ 2f0
@@ -35,7 +35,7 @@ function generate_dirs(max_step)
     end
 
     for d in dirs
-        !isdir(d) || mkpath(d)
+        isdir(d) || mkpath(d)
     end
 end
 
@@ -54,6 +54,13 @@ function save_training_loss(st, epoch, loss_dscr, loss_gen_adv, loss_gen_rec)
     end
 
     open(path, "a") do io
-        write(io, @sprintf("%d,%06f,%06f, %06f\n", epoch, loss_dscr, loss_gen_adv, loss_gen_rec))
+        write(io, @sprintf("%d,%06f,%06f,%06f\n", epoch, loss_dscr, loss_gen_adv, loss_gen_rec))
+    end
+end
+
+function save_scaled_reals(real_img_p) 
+    # save real images
+    for (n, img) in enumerate(real_img_p)
+        save_array_as_image(scaled_real_savepath(n), img[:, :, :, 1])
     end
 end
