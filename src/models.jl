@@ -120,13 +120,13 @@ function Base.show(io::IO, d::GeneratorPyramid)
     print(io, ")")
 end
 
-function (gen::GeneratorPyramid)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
-    img = fill!(similar(first(xs), expand_dim(first(gen.image_shapes))), 0f0)
+function (genp::GeneratorPyramid)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
+    img = fill!(similar(first(xs), expand_dim(first(genp.image_shapes))), 0f0)
     n = Base.length(xs)
     for (i, x) in enumerate(xs)
-        img = gen.chains[i](img, x)
+        img = genp.chains[i](img, x)
         if i != n || (i == n && resize)
-            img = adapt(img, zoom_image(adapt(Array, img), gen.image_shapes[i + 1]))
+            img = zoom_image(img, genp.image_shapes[i + 1])
         end
     end
     return img
