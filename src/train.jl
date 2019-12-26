@@ -58,23 +58,38 @@ end
 """
     train
 """
-function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p)
+function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
+        dscr, genp::GeneratorPyramid, prev_rec, real_img, amplifiers, alpha)
+    # training
+    # prev_rec is only used to infer array type
+
+    loss_dscr = loss_gen_adv = loss_gen_rec = 0f0
+
+    # discriminator
+    for _ in 1:loop_dscr
+        noise_adv = noise_vector_generation(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        g_fake_adv = genp(noise_adv, false)
+        loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
+    end
+
+    # generator
+    for _ in 1:loop_gen
+        # adv
+        noise_adv_full = noise_vector_generation(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        prev_adv = st == 1 ? zero(prev_rec) : genp(noise_adv_full[1:end-1], true)
+        loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
+
+        # rec
+        loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, alpha)
+    end
+
+    return loss_dscr, loss_gen_adv, loss_gen_rec
+end
+
+function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
+        max_epoch, reduce_lr_epoch, loop_dscr, loop_gen, lr_dscr, lr_gen, alpha)
     @info dscrp
     @info genp
-    loop_dscr = 3
-    loop_gen = 3
-    alpha = 50f0
-
-    lr_dscr = 5e-4
-    lr_gen = 5e-4
-    opt_dscr = ADAM(lr_dscr, (0.5, 0.999))
-    opt_gen = ADAM(lr_gen, (0.5, 0.999))
-
-    max_epoch = 20
-    # emax_epoch = 2000
-
-    reduce_lr_epoch = 16
-    # reduce_lr_epoch = 1600
 
     amplifier_init = 1f0
     amplifiers = [amplifier_init]
@@ -85,10 +100,8 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p)
     for st in 1:Base.length(genp.image_shapes)
         @info "Step $(st)"
         # reset optimizer
-        opt_dscr.eta = lr_dscr
-        opt_gen.eta = lr_gen
-        opt_dscr.state = IdDict()
-        opt_gen.state = IdDict()
+        opt_dscr = ADAM(lr_dscr, (0.5, 0.999))
+        opt_gen = ADAM(lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
         if st > 1
@@ -111,23 +124,8 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p)
                 opt_gen.eta /= 10
             end
 
-            # training
-            # prev_rec is only used to infer array type
-
-            # discriminator
-            noise_adv = noise_vector_generation(prev_rec, genp.noise_shapes[1:st], amplifiers)
-            g_fake_adv = genp(noise_adv, false)
-            update_discriminator!(opt_dscr, dscrp.chains[st], real_img_p[st], g_fake_adv)
-
-            # generator
-            # adv
-            
-            noise_adv_full = noise_vector_generation(prev_rec, genp.noise_shapes[1:st], amplifiers)
-            prev_adv = st == 1 ? zero(prev_rec) : genp(noise_adv_full[1:end-1], true)
-            update_generator_adv!(opt_gen, dscrp.chains[st], genp.chains[st], prev_adv, last(noise_adv_full))
-
-            # rec
-            update_generator_rec!(opt_gen, genp.chains[st], real_img_p[st], prev_rec, alpha)            
+            train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
+                dscrp.chains[st], genp, prev_rec, real_img_p[st], amplifiers, alpha)
         end
     
     end
