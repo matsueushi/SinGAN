@@ -66,14 +66,14 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     loss_dscr = loss_gen_adv = loss_gen_rec = 0f0
 
     # discriminator
-    for _ in 1:loop_dscr
+    foreach(1:loop_dscr) do
         noise_adv = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
         g_fake_adv = genp(noise_adv, false)
         loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
     end
 
     # generator
-    for _ in 1:loop_gen
+    foreach(1:loop_gen) do
         # rec
         loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, alpha)
 
@@ -102,8 +102,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
 
     # fixed noise for rec
     fixed_rec_noise = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
-
-    adv_noise_anime = build_noise_vector(first(real_img_p), genp.noise_shapes[1:1], amplifiers)
+    adv_noise_anime = similar(fixed_rec_noise)
     
     for st in 1:stages
         @info "Step $(st)"
@@ -112,7 +111,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
         opt_gen = ADAM(lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
-        prev_rec = genp(fixed_rec_noise[1:st-1], true) # padded
+        prev_rec = genp(view(fixed_rec_noise, 1:st-1), true) # padded
         prev_rec_crop = @view prev_rec[1 + genp.pad:end - genp.pad, 1 + genp.pad:end - genp.pad, :, :]
         rmse = sqrt(mse(real_img_p[st], prev_rec_crop))
         amp = rmse * amplifier_init

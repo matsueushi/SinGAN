@@ -112,29 +112,22 @@ function Base.show(io::IO, d::GeneratorPyramid)
     print(io, ")")
 end
 
-function generate_and_resize(genp::GeneratorPyramid, xs::AbstractVector{T}) where {T<:AbstractArray{Float32,4}}
+function (genp::GeneratorPyramid)(xs::AbstractArray{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
     st = Base.length(xs)
-    @assert st < Base.length(genp.image_shapes)
     if st == 0
-        return zeros_like(T, expand_dim(first(genp.noise_shapes)))
+        if resize
+            return zeros_like(T, expand_dim(first(genp.noise_shapes)))
+        else
+            return zeros_like(T, expand_dim(first(genp.image_shapes)))
+        end
     end
 
-    xs_pop = @view xs[1:end - 1]
-    prev = generate_and_resize(genp, xs_pop)
-    x = genp.chains[st](prev, last(xs))
-    # println(genp.image_shapes, genp.noise_shapes)
-    return resize_and_padding(x, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
-end
-
-function (genp::GeneratorPyramid)(xs::AbstractVector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
-    st = Base.length(xs)
+    xs_prev = @view xs[1:end - 1]
+    prev = genp(xs_prev, true)
+    out = genp.chains[st](prev, last(xs))
     if resize
-        return generate_and_resize(genp, xs)
-    elseif st == 0
-        return zeros_like(T, expand_dim(first(genp.image_shapes)))
+        return resize_and_padding(out, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
     else
-        xs_pop = @view xs[1:end - 1]
-        prev = generate_and_resize(genp, xs_pop)
-        return genp.chains[st](prev, last(xs))
+        return out
     end
 end
