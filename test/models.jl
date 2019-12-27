@@ -33,22 +33,24 @@ end
 @testset "NoiseConnection" begin
     nc = SinGAN.NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
     @info nc
-    prev = randn(Float32, 32, 32, 3, 1)
+    prev = randn(Float32, 42, 42, 3, 1)
     noise = randn(Float32, 42, 42, 3, 1)
-    @test size(nc(prev, noise)) == size(prev)
+    @test size(nc(prev, noise)) == (32, 32, 3, 1)
     # @code_warntype nc(prev, noise)
-    @test size(nc(prev)) == size(prev)
+    @test size(nc(prev)) == (32, 32, 3, 1) 
 end
 
 @testset "GeneratorPyramid" begin
-    image_shapes = [(32, 32), (42, 42)]
+    image_shapes = [(32, 32), (44, 44)]
     genp = SinGAN.GeneratorPyramid(image_shapes, 5)
     @info genp
-    @test genp.noise_shapes == [(42, 42), (52, 52)]
+    @test genp.noise_shapes == [(42, 42), (54, 54)]
+    @test size(genp(Array{Float32,4}[], false)) == (32, 32, 3, 1)
+    @test size(genp(Array{Float32,4}[], true)) == (42, 42, 3, 1)
     xs1 = [randn(Float32, 42, 42, 3, 1)] |> gpu
     @code_warntype genp(xs1, false)
     @test size(genp(xs1, false)) == (32, 32, 3, 1)
-    @test size(genp(xs1, true)) == (42, 42, 3, 1)
-    xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 52, 52, 3, 1)] |> gpu
-    @test size(genp(xs2, false)) == (42, 42, 3, 1)
+    @test size(genp(xs1, true)) == (54, 54, 3, 1)
+    xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 54, 54, 3, 1)] |> gpu
+    @test size(genp(xs2, false)) == (44, 44, 3, 1)
 end

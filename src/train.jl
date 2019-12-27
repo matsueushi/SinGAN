@@ -67,7 +67,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
 
     # discriminator
     for _ in 1:loop_dscr
-        noise_adv = noise_vector_generation(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        noise_adv = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
         g_fake_adv = genp(noise_adv, false)
         loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
     end
@@ -78,7 +78,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
         loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, alpha)
 
         # adv
-        noise_adv_full = noise_vector_generation(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        noise_adv_full = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
         prev_adv = st == 1 ? zero(prev_rec) : genp(noise_adv_full[1:end-1], true)
         loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
     end
@@ -100,9 +100,9 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
     amplifiers = [amplifier_init]
 
     # fixed noise for rec
-    fixed_rec_noise = rec_vector_generation(first(real_img_p), genp.noise_shapes, amplifier_init)
+    fixed_rec_noise = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
 
-    adv_noise_anime = noise_vector_generation(first(real_img_p), genp.noise_shapes[1:1], amplifiers)
+    adv_noise_anime = build_noise_vector(first(real_img_p), genp.noise_shapes[1:1], amplifiers)
     
     for st in 1:stages
         @info "Step $(st)"

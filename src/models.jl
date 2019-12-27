@@ -64,33 +64,17 @@ end
 
 @Flux.functor NoiseConnection
 
-function zero_padding(x::Array{Float32,4}, pad)
-    # padding
-    d = size(x, 3)
-    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
-    return c(x)
-end
-
-function zero_padding(x::CuArray{Float32,4}, pad)
-    # padding
-    d = size(x, 3)
-    c = DepthwiseConv((1, 1), d => d, pad = pad; init=Flux.ones)
-    return c(x)
-end
-
 # adv connection
 function (nc::NoiseConnection)(prev, noise)
     pad = nc.pad
-    prev_pad = zero_padding(prev, pad)
-    raw_output = nc.layers(noise + prev_pad)
-    return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :] + prev
+    raw_output = nc.layers(noise + prev) + prev
+    return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :]
 end
 
 # rec connection
 function (nc::NoiseConnection)(prev)
     pad = nc.pad
-    prev_pad = zero_padding(prev, pad)
-    return nc.layers(prev_pad)[1 + pad:end-pad, 1 + pad:end-pad, :, :]
+    return nc.layers(prev)[1 + pad:end-pad, 1 + pad:end-pad, :, :]
 end
 
 function Base.show(io::IO, nc::NoiseConnection)
@@ -130,14 +114,41 @@ function Base.show(io::IO, d::GeneratorPyramid)
     print(io, ")")
 end
 
-function (genp::GeneratorPyramid)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
-    img = fill!(similar(first(xs), expand_dim(first(genp.image_shapes))), 0f0)
-    n = Base.length(xs)
-    for (i, x) in enumerate(xs)
-        img = genp.chains[i](img, x)
-        if i != n || (i == n && resize)
-            img = zoom_image(img, genp.image_shapes[i + 1])
-        end
+function generate_and_resize(genp::GeneratorPyramid, xs::AbstractVector{T}) where {T<:AbstractArray{Float32,4}}
+    st = Base.length(xs)
+    @assert st < Base.length(genp.image_shapes)
+    if st == 0
+        return fill!(similar(T, expand_dim(first(genp.noise_shapes))), 0f0)
     end
-    return img
+
+    xs_pop = @view xs[1:end - 1]
+    prev = generate_and_resize(genp, xs_pop)
+    x = genp.chains[st](prev, last(xs))
+    # println(genp.image_shapes, genp.noise_shapes)
+    return zoom_pad_image(x, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
 end
+
+function (genp::GeneratorPyramid)(xs::AbstractVector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
+    st = Base.length(xs)
+    if resize
+        return generate_and_resize(genp, xs)
+    elseif st == 0
+        return fill!(similar(T, expand_dim(first(genp.image_shapes))), 0f0)
+    else
+        xs_pop = @view xs[1:end - 1]
+        prev = generate_and_resize(genp, xs_pop)
+        return genp.chains[st](prev, last(xs))
+    end
+end
+
+# function (genp::GeneratorPyramid)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
+#     img = fill!(similar(first(xs), expand_dim(first(genp.image_shapes))), 0f0)
+#     n = Base.length(xs)
+#     for (i, x) in enumerate(xs)
+#         img = genp.chains[i](img, x)
+#         if i != n || (i == n && resize)
+#             img = zoom_image(img, genp.image_shapes[i + 1])
+#         end
+#     end
+#     return img
+# end
