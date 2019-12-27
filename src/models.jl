@@ -93,9 +93,7 @@ mutable struct GeneratorPyramid{T<:Tuple}
 end
 
 build_single_gen_layers(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
-function build_single_generator(n_layers, conv_chs, pad)
-    NoiseConnection(build_single_gen_layers(n_layers, conv_chs), pad)
-end
+build_single_generator(n_layers, conv_chs, pad) = NoiseConnection(build_single_gen_layers(n_layers, conv_chs), pad)
 
 function GeneratorPyramid(image_shapes, n_layers::Integer; pad::Integer = 5)
     n_stage = Base.length(image_shapes)
@@ -118,7 +116,7 @@ function generate_and_resize(genp::GeneratorPyramid, xs::AbstractVector{T}) wher
     st = Base.length(xs)
     @assert st < Base.length(genp.image_shapes)
     if st == 0
-        return fill!(similar(T, expand_dim(first(genp.noise_shapes))), 0f0)
+        return zeros_like(T, expand_dim(first(genp.noise_shapes)))
     end
 
     xs_pop = @view xs[1:end - 1]
@@ -133,22 +131,10 @@ function (genp::GeneratorPyramid)(xs::AbstractVector{T}, resize::Bool) where {T<
     if resize
         return generate_and_resize(genp, xs)
     elseif st == 0
-        return fill!(similar(T, expand_dim(first(genp.image_shapes))), 0f0)
+        return zeros_like(T, expand_dim(first(genp.image_shapes)))
     else
         xs_pop = @view xs[1:end - 1]
         prev = generate_and_resize(genp, xs_pop)
         return genp.chains[st](prev, last(xs))
     end
 end
-
-# function (genp::GeneratorPyramid)(xs::Vector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
-#     img = fill!(similar(first(xs), expand_dim(first(genp.image_shapes))), 0f0)
-#     n = Base.length(xs)
-#     for (i, x) in enumerate(xs)
-#         img = genp.chains[i](img, x)
-#         if i != n || (i == n && resize)
-#             img = zoom_image(img, genp.image_shapes[i + 1])
-#         end
-#     end
-#     return img
-# end

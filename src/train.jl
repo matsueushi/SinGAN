@@ -79,7 +79,8 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
 
         # adv
         noise_adv_full = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
-        prev_adv = st == 1 ? zero(prev_rec) : genp(noise_adv_full[1:end-1], true)
+        noise_adv_pop = @view noise_adv_full[1:end]
+        prev_adv = genp(noise_adv_pop, true)
         loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
     end
 
@@ -97,7 +98,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
     @info genp
 
     amplifier_init = 1f0
-    amplifiers = [amplifier_init]
+    amplifiers = []
 
     # fixed noise for rec
     fixed_rec_noise = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
@@ -111,19 +112,13 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
         opt_gen = ADAM(lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
-        if st > 1
-            g_fake_rec = genp(fixed_rec_noise[1:st-1], true)
-            rmse = sqrt(mse(real_img_p[st], g_fake_rec))
-            amp = rmse * amplifier_init
-            push!(amplifiers, amp)
-            # add noise for animation
-            push!(adv_noise_anime, amp * randn!(similar(g_fake_rec, expand_dim(genp.noise_shapes[st]))))
-
-            prev_rec = g_fake_rec
-        else
-            amp = amplifier_init
-            prev_rec = zero(first(real_img_p)) 
-        end
+        prev_rec = genp(fixed_rec_noise[1:st-1], true) # padded
+        prev_rec_crop = @view prev_rec[1 + genp.pad:end - genp.pad, 1 + genp.pad:end - genp.pad, :, :]
+        rmse = sqrt(mse(real_img_p[st], prev_rec_crop))
+        amp = rmse * amplifier_init
+        push!(amplifiers, amp)
+        # add noise for animation
+        push!(adv_noise_anime, amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st])))
 
         save_noise_amplifiers(st, amp)
         @info "Noise amplifier: $(amp)"
@@ -155,10 +150,10 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
         end
 
         dscr = dscrp.chains[st] |> cpu
-        @save discriminator_savepath(i) dscr
+        @save discriminator_savepath(st) dscr
 
         gen = genp.chains[st]|> cpu
-        @save generator_savepath(i) gen
+        @save generator_savepath(st) gen
     end
 
     return amplifiers
