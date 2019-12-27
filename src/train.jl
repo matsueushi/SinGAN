@@ -42,11 +42,11 @@ function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     return loss
 end
 
-function update_generator_rec!(opt, gen, real_img, prev_rec, alpha)
+function update_generator_rec!(opt, gen, real_img, prev_rec, rec_noise, alpha)
     @eval Flux.istraining() = true
     ps = params(gen)
     loss, back = pullback(ps) do
-        g_fake_rec = gen(prev_rec)
+        g_fake_rec = gen(prev_rec, rec_noise)
         alpha * generator_rec_loss(real_img, g_fake_rec)
     end
     grad = back(1f0)
@@ -59,35 +59,34 @@ end
     train
 """
 function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
-        dscr, genp::GeneratorPyramid, prev_rec, real_img, amplifiers, alpha)
+        dscr, genp, prev_rec, rec_noise, real_img, amplifiers, alpha)
     # training
     # prev_rec is only used to infer array type
 
     loss_dscr = loss_gen_adv = loss_gen_rec = 0f0
 
     # discriminator
-    foreach(1:loop_dscr) do
+    for _ in 1:loop_dscr
         noise_adv = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
-        g_fake_adv = genp(noise_adv, false)
+        g_fake_adv = genp(noise_adv, st, false)
         loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
     end
 
     # generator
-    foreach(1:loop_gen) do
+    for _ in 1:loop_gen
         # rec
-        loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, alpha)
+        loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, rec_noise, alpha)
 
         # adv
         noise_adv_full = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
-        noise_adv_pop = @view noise_adv_full[1:end-1]
-        prev_adv = genp(noise_adv_pop, true)
+        prev_adv = genp(noise_adv_full, st - 1, true)
         loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
     end
 
     return loss_dscr, loss_gen_rec, loss_gen_adv
 end
 
-function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
+function train!(dscrp, genp, real_img_p,
         max_epoch, reduce_lr_epoch, save_image_every_epoch, save_loss_every_epoch,
         loop_dscr, loop_gen, lr_dscr, lr_gen, alpha)
     stages = Base.length(genp.image_shapes)
@@ -111,13 +110,13 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
         opt_gen = ADAM(lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
-        prev_rec = genp(view(fixed_rec_noise, 1:st-1), true) # padded
+        prev_rec = genp(fixed_rec_noise, st-1, true) # padded
         prev_rec_crop = @view prev_rec[1 + genp.pad:end - genp.pad, 1 + genp.pad:end - genp.pad, :, :]
         rmse = sqrt(mse(real_img_p[st], prev_rec_crop))
         amp = rmse * amplifier_init
         push!(amplifiers, amp)
         # add noise for animation
-        push!(adv_noise_anime, amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st])))
+        adv_noise_anime[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]))
 
         save_noise_amplifiers(st, amp)
         @info "Noise amplifier: $(amp)"
@@ -132,18 +131,19 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
 
             loss_dscr, loss_gen_rec, loss_gen_adv = 
                 train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
-                    dscrp.chains[st], genp, prev_rec, real_img_p[st], amplifiers, alpha)
+                    dscrp.chains[st], genp, prev_rec, fixed_rec_noise[st], real_img_p[st], amplifiers, alpha)
 
             # save image/loss
             if ep == 1 || ep % save_image_every_epoch == 0 || ep == max_epoch
-                g_fake_rec = genp(view(fixed_rec_noise, 1:st), false)
+                g_fake_rec = genp(fixed_rec_noise, st, false)
                 save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
 
-                g_fake_adv = genp(adv_noise_anime, false)
+                g_fake_adv = genp(adv_noise_anime, st, false)
                 save_array_as_image(fake_adv_savepath(st, ep), view(g_fake_adv, :, :, :, 1))
             end
 
             if ep == 1 || ep % save_loss_every_epoch == 0 || ep == max_epoch
+                @info "Epoch $(ep), loss_dscr $(loss_dscr), loss_gen_adv $(loss_gen_adv), loss_gen_rec $(loss_gen_rec)"
                 save_training_loss(st, ep, loss_dscr, loss_gen_adv, loss_gen_rec)
             end
         end

@@ -51,8 +51,8 @@ end
     gen = SinGAN.build_single_generator(3, 4, 1)
     real_img = ones(Float32, 2, 2, 3, 1)
     prev_rec = randn(Float32, 4, 4, 3, 1) # padded
+    rec_noise = zero(prev_rec)
     alpha = 10f0
-    @info SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, alpha)
-    @inferred Float32 SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, alpha)
-    # @code_warntype SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, alpha)
+    @info SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, rec_noise, alpha)
+    @inferred Float32 SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, rec_noise, alpha)
 end

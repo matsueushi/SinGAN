@@ -64,17 +64,10 @@ end
 
 @Flux.functor NoiseConnection
 
-# adv connection
 function (nc::NoiseConnection)(prev, noise)
     pad = nc.pad
     raw_output = nc.layers(noise + prev) + prev
     return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :]
-end
-
-# rec connection
-function (nc::NoiseConnection)(prev)
-    pad = nc.pad
-    return nc.layers(prev)[1 + pad:end-pad, 1 + pad:end-pad, :, :]
 end
 
 function Base.show(io::IO, nc::NoiseConnection)
@@ -112,8 +105,7 @@ function Base.show(io::IO, d::GeneratorPyramid)
     print(io, ")")
 end
 
-function (genp::GeneratorPyramid)(xs::AbstractArray{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}
-    st = Base.length(xs)
+function (genp::GeneratorPyramid)(xs::AbstractArray{T}, st::Integer, resize::Bool) where {T<:AbstractArray{Float32,4}}
     if st == 0
         if resize
             return zeros_like(T, expand_dim(first(genp.noise_shapes)))
@@ -122,9 +114,8 @@ function (genp::GeneratorPyramid)(xs::AbstractArray{T}, resize::Bool) where {T<:
         end
     end
 
-    xs_prev = @view xs[1:end - 1]
-    prev = genp(xs_prev, true)
-    out = genp.chains[st](prev, last(xs))
+    prev = genp(xs, st - 1, true)
+    out = genp.chains[st](prev, xs[st])
     if resize
         return resize_and_padding(out, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
     else
