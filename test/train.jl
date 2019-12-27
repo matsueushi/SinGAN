@@ -39,7 +39,7 @@ end
     opt = ADAM(0.0005f0)
     dscr = SinGAN.build_single_discriminator(3, 4)
     gen = SinGAN.build_single_generator(3, 4, 1)
-    prev_adv = randn(Float32, 2, 2, 3, 1)
+    prev_adv = SinGAN.resize_and_padding(randn(Float32, 2, 2, 3, 1), (2, 2), (4, 4))
     noise_adv = randn(Float32, 4, 4, 3, 1)
     @info SinGAN.update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     @inferred Float32 SinGAN.update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
@@ -50,7 +50,7 @@ end
     opt = ADAM(0.0005f0)
     gen = SinGAN.build_single_generator(3, 4, 1)
     real_img = ones(Float32, 2, 2, 3, 1)
-    prev_rec = randn(Float32, 2, 2, 3, 1)
+    prev_rec = randn(Float32, 4, 4, 3, 1) # padded
     alpha = 10f0
     @info SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, alpha)
     @inferred Float32 SinGAN.update_generator_rec!(opt, gen, real_img, prev_rec, alpha)

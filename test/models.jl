@@ -48,7 +48,7 @@ end
     @test size(genp(Array{Float32,4}[], false)) == (32, 32, 3, 1)
     @test size(genp(Array{Float32,4}[], true)) == (42, 42, 3, 1)
     xs1 = [randn(Float32, 42, 42, 3, 1)] |> gpu
-    @code_warntype genp(xs1, false)
+    # @code_warntype genp(xs1, false)
     @test size(genp(xs1, false)) == (32, 32, 3, 1)
     @test size(genp(xs1, true)) == (54, 54, 3, 1)
     xs2 = [randn(Float32, 42, 42, 3, 1), randn(Float32, 54, 54, 3, 1)] |> gpu

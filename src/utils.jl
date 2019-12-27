@@ -2,25 +2,25 @@ using Images
 
 expand_dim(t::Tuple{Int64,Int64}) = (t..., 3, 1)
 zeros_like(T::Type, dims...) = fill!(similar(T, dims...), 0f0)
-zeros_like(xs, dims...) = zeros_like(typeof(xs), dims...)
+zeros_like(xs, dims...) = fill!(similar(xs, dims...), 0f0)
 randn_like(T::Type, dims...) = randn!(similar(T, dims...))
-randn_like(xs, dims...) = randn_like(typeof(xs), dims...)
+randn_like(xs, dims...) where{T} = randn!(similar(xs, dims...))
 
-function zoom_pad_image(x::Array{Float32,4}, image_shape, noise_shape)
-    # println(size(x), image_shape, noise_shape)
+function resize_and_padding(x::Array{Float32,4}, image_shape, padded_shape)
+    # println(size(x), image_shape, padded_shape)
     x_large = mapslices(x->imresize(x, image_shape...), x; dims = (1, 2, 3))
-    xx = zeros(Float32, expand_dim(noise_shape))
-    pad1, pad2 = (noise_shape .- image_shape)[1:2] .÷ 2
+    xx = zeros(Float32, expand_dim(padded_shape))
+    pad1, pad2 = (padded_shape .- image_shape)[1:2] .÷ 2
     xx[1 + pad1:image_shape[1] + pad1, 1 + pad2:image_shape[2] + pad2, : , :] = x_large
     return xx
 end
 
-function zoom_pad_image(x::CuArray{Float32,4}, image_shape, noise_shape)
-    return cu(zoom_pad_image(adapt(Array{Float32}, x), image_shape, noise_shape))
+function resize_and_padding(x::CuArray{Float32,4}, image_shape, padded_shape)
+    return cu(resize_and_padding(adapt(Array{Float32}, x), image_shape, padded_shape))
 end
 
 function build_image_pyramid(img::AbstractArray{Float32,4}, image_shapes, noise_shapes)
-    return [zoom_pad_image(img, is, ns) for (is, ns) in zip(image_shapes, noise_shapes)]
+    return [resize_and_padding(img, is, ns) for (is, ns) in zip(image_shapes, noise_shapes)]
 end
 
 build_zero_pyramid(xs, shapes) = [zeros_like(xs, expand_dim(s)) for s in shapes]

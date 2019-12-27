@@ -1,7 +1,7 @@
-@testset "zoom_pad_image" begin
+@testset "resize_and_padding" begin
     x = randn(Float32, 2, 2, 3, 1)
     @info x
-    @info SinGAN.zoom_pad_image(x, (3, 3), (5, 5))
+    @info SinGAN.resize_and_padding(x, (3, 3), (5, 5))
 end
 
 @testset "build_zero_pyramid" begin

@@ -123,7 +123,7 @@ function generate_and_resize(genp::GeneratorPyramid, xs::AbstractVector{T}) wher
     prev = generate_and_resize(genp, xs_pop)
     x = genp.chains[st](prev, last(xs))
     # println(genp.image_shapes, genp.noise_shapes)
-    return zoom_pad_image(x, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
+    return resize_and_padding(x, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
 end
 
 function (genp::GeneratorPyramid)(xs::AbstractVector{T}, resize::Bool) where {T<:AbstractArray{Float32,4}}

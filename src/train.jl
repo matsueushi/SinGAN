@@ -79,7 +79,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
 
         # adv
         noise_adv_full = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
-        noise_adv_pop = @view noise_adv_full[1:end]
+        noise_adv_pop = @view noise_adv_full[1:end-1]
         prev_adv = genp(noise_adv_pop, true)
         loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
     end
@@ -98,7 +98,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
     @info genp
 
     amplifier_init = 1f0
-    amplifiers = []
+    amplifiers = Float32[]
 
     # fixed noise for rec
     fixed_rec_noise = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
@@ -137,11 +137,11 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, real_img_p,
 
             # save image/loss
             if ep == 1 || ep % save_image_every_epoch == 0 || ep == max_epoch
-                g_fake_rec = genp(fixed_rec_noise[1:st], false)
-                save_array_as_image(fake_rec_savepath(st, ep), g_fake_rec[:, :, :, 1])
+                g_fake_rec = genp(view(fixed_rec_noise, 1:st), false)
+                save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
 
                 g_fake_adv = genp(adv_noise_anime, false)
-                save_array_as_image(fake_adv_savepath(st, ep), g_fake_adv[:, :, :, 1])
+                save_array_as_image(fake_adv_savepath(st, ep), view(g_fake_adv, :, :, :, 1))
             end
 
             if ep == 1 || ep % save_loss_every_epoch == 0 || ep == max_epoch
