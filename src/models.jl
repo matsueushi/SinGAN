@@ -64,7 +64,7 @@ end
 
 @Flux.functor NoiseConnection
 
-function (nc::NoiseConnection)(prev, noise)
+function (nc::NoiseConnection)(prev::T, noise::T) where {T<:AbstractArray{Float32,4}}
     pad = nc.pad
     raw_output = nc.layers(noise + prev) + prev
     return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :]
@@ -88,7 +88,7 @@ end
 build_single_gen_layers(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
 build_single_generator(n_layers, conv_chs, pad) = NoiseConnection(build_single_gen_layers(n_layers, conv_chs), pad)
 
-function GeneratorPyramid(image_shapes, n_layers::Integer; pad::Integer = 5)
+function GeneratorPyramid(image_shapes, n_layers, pad = 5)
     n_stage = Base.length(image_shapes)
     # receptive field = 11, floor(11/2) = 5
     noise_shapes = [2 * pad .+ s for s in image_shapes]
@@ -105,13 +105,10 @@ function Base.show(io::IO, d::GeneratorPyramid)
     print(io, ")")
 end
 
-function (genp::GeneratorPyramid)(xs::AbstractArray{T}, st::Integer, resize::Bool) where {T<:AbstractArray{Float32,4}}
+function (genp::GeneratorPyramid)(xs::AbstractVector{T}, st::Integer, resize::Bool) where {T<:AbstractArray{Float32,4}}
     if st == 0
-        if resize
-            return zeros_like(T, expand_dim(first(genp.noise_shapes)))
-        else
-            return zeros_like(T, expand_dim(first(genp.image_shapes)))
-        end
+        zeros_shape = resize ? first(genp.noise_shapes) : first(genp.image_shapes)
+        return zeros_like(T, expand_dim(zeros_shape...))
     end
 
     prev = genp(xs, st - 1, true)

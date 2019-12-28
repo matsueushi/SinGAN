@@ -29,6 +29,19 @@ end
 """
     update generator
 """
+function update_generator_rec!(opt, gen, real_img, prev_rec, noise_rec, alpha)
+    @eval Flux.istraining() = true
+    ps = params(gen)
+    loss, back = pullback(ps) do
+        g_fake_rec = gen(prev_rec, noise_rec)
+        alpha * generator_rec_loss(real_img, g_fake_rec)
+    end
+    grad = back(1f0)
+    update!(opt, ps, grad)
+    @eval Flux.istraining() = false
+    return loss
+end
+
 function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     @eval Flux.istraining() = true
     ps = params(gen)
@@ -42,24 +55,11 @@ function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     return loss
 end
 
-function update_generator_rec!(opt, gen, real_img, prev_rec, rec_noise, alpha)
-    @eval Flux.istraining() = true
-    ps = params(gen)
-    loss, back = pullback(ps) do
-        g_fake_rec = gen(prev_rec, rec_noise)
-        alpha * generator_rec_loss(real_img, g_fake_rec)
-    end
-    grad = back(1f0)
-    update!(opt, ps, grad)
-    @eval Flux.istraining() = false
-    return loss
-end
-
 """
     train
 """
 function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
-        dscr, genp, prev_rec, rec_noise, real_img, amplifiers, alpha)
+        dscr, genp, prev_rec, noise_rec, real_img, amplifiers, alpha)
     # training
     # prev_rec is only used to infer array type
 
@@ -75,7 +75,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     # generator
     for _ in 1:loop_gen
         # rec
-        loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, rec_noise, alpha)
+        loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
 
         # adv
         noise_adv_full = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
@@ -100,8 +100,8 @@ function train!(dscrp, genp, real_img_p,
     amplifiers = Float32[]
 
     # fixed noise for rec
-    fixed_rec_noise = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
-    adv_noise_anime = similar(fixed_rec_noise)
+    fixed_noise_rec = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
+    adv_noise_anime = similar(fixed_noise_rec)
     
     for st in 1:stages
         @info "Step $(st)"
@@ -110,13 +110,13 @@ function train!(dscrp, genp, real_img_p,
         opt_gen = ADAM(lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
-        prev_rec = genp(fixed_rec_noise, st-1, true) # padded
+        prev_rec = genp(fixed_noise_rec, st-1, true) # padded
         prev_rec_crop = @view prev_rec[1 + genp.pad:end - genp.pad, 1 + genp.pad:end - genp.pad, :, :]
         rmse = sqrt(mse(real_img_p[st], prev_rec_crop))
         amp = rmse * amplifier_init
         push!(amplifiers, amp)
         # add noise for animation
-        adv_noise_anime[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]))
+        adv_noise_anime[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]...))
 
         save_noise_amplifiers(st, amp)
         @info "Noise amplifier: $(amp)"
@@ -131,11 +131,11 @@ function train!(dscrp, genp, real_img_p,
 
             loss_dscr, loss_gen_rec, loss_gen_adv = 
                 train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
-                    dscrp.chains[st], genp, prev_rec, fixed_rec_noise[st], real_img_p[st], amplifiers, alpha)
+                    dscrp.chains[st], genp, prev_rec, fixed_noise_rec[st], real_img_p[st], amplifiers, alpha)
 
             # save image/loss
             if ep == 1 || ep % save_image_every_epoch == 0 || ep == max_epoch
-                g_fake_rec = genp(fixed_rec_noise, st, false)
+                g_fake_rec = genp(fixed_noise_rec, st, false)
                 save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
 
                 g_fake_adv = genp(adv_noise_anime, st, false)

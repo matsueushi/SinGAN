@@ -22,8 +22,8 @@ function main()
 
     real_img_p = SinGAN.build_image_pyramid(orig_img, image_shapes, image_shapes)
 
-    max_epoch = 100
-    reduce_lr_epoch = 80
+    max_epoch = 2000
+    reduce_lr_epoch = 1600
     save_image_every_epoch = 500
     save_loss_every_epoch = 100
 

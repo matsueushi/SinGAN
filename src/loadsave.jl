@@ -89,10 +89,6 @@ function load_with_batchnorm!(chain::Chain, data)
     end
 end
 
-function load_amplifiers()
-    return
-end
-
 function load_model_params!(dscrp, genp, max_stage)
     for i in 1:max_stage
         @load discriminator_savepath(i) dscr
