@@ -23,7 +23,7 @@ function update_discriminator!(opt, dscr, real_img, g_fake_adv)
     grad = back(1f0)
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
-    return loss
+    return loss::Float32
 end
 
 """
@@ -39,7 +39,7 @@ function update_generator_rec!(opt, gen, real_img, prev_rec, noise_rec, alpha)
     grad = back(1f0)
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
-    return loss
+    return loss::Float32
 end
 
 function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
@@ -52,7 +52,7 @@ function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     grad = back(1f0)
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
-    return loss
+    return loss::Float32
 end
 
 """
@@ -91,6 +91,13 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     return loss_dscr, loss_gen_rec, loss_gen_adv
 end
 
+function estimate_noise_amplifier(prev_rec::AbstractArray{Float32,4}, real_img::AbstractArray{Float32,4},
+        pad::Integer, amplifier_init::Float32)
+    prev_rec_crop = @view prev_rec[1 + pad:end - pad, 1 + pad:end - pad, :, :]
+    rmse = sqrt(mse(real_img, prev_rec_crop))
+    return rmse * amplifier_init
+end
+
 function train!(dscrp, genp, real_img_p,
         max_epoch, reduce_lr_epoch, save_image_every_epoch, save_loss_every_epoch,
         loop_dscr, loop_gen, lr_dscr, lr_gen, alpha)
@@ -106,7 +113,7 @@ function train!(dscrp, genp, real_img_p,
 
     # fixed noise for rec
     fixed_noise_rec = build_rec_pyramid(first(real_img_p), genp.noise_shapes, amplifier_init)
-    adv_noise_anime = similar(fixed_noise_rec)
+    fixed_noise_adv = similar(fixed_noise_rec)
     
     for st in 1:stages
         @info "Step $(st)"
@@ -116,12 +123,10 @@ function train!(dscrp, genp, real_img_p,
 
         # calculate noise amplifier
         prev_rec = genp(fixed_noise_rec, st - 1, true) # padded
-        prev_rec_crop = @view prev_rec[1 + genp.pad:end - genp.pad, 1 + genp.pad:end - genp.pad, :, :]
-        rmse = sqrt(mse(real_img_p[st], prev_rec_crop))
-        amp = rmse * amplifier_init
+        amp = estimate_noise_amplifier(prev_rec, real_img_p[st], genp.pad, amplifier_init)
         push!(amplifiers, amp)
-        # add noise for animation
-        adv_noise_anime[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]...))
+        # add noise for adv 
+        fixed_noise_adv[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]...))
 
         save_noise_amplifiers(st, amp)
         @info "Noise amplifier: $(amp)"
@@ -143,7 +148,7 @@ function train!(dscrp, genp, real_img_p,
                 g_fake_rec = genp(fixed_noise_rec, st, false)
                 save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
 
-                g_fake_adv = genp(adv_noise_anime, st, false)
+                g_fake_adv = genp(fixed_noise_adv, st, false)
                 save_array_as_image(fake_adv_savepath(st, ep), view(g_fake_adv, :, :, :, 1))
             end
 
@@ -153,11 +158,7 @@ function train!(dscrp, genp, real_img_p,
             end
         end
 
-        dscr = dscrp.chains[st] |> cpu
-        @save discriminator_savepath(st) dscr
-
-        gen = genp.chains[st] |> cpu
-        @save generator_savepath(st) gen
+        save_model_params(dscrp, genp, st)
     end
 
     return amplifiers

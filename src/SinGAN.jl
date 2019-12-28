@@ -8,7 +8,7 @@ using Flux: mse, pullback
 using Flux.Optimise: update!
 using Random
 
-export DiscriminatorPyramid, GeneratorPyramid, train!
+export DiscriminatorPyramid, GeneratorPyramid, NoiseConnection, train!
 
 include("models.jl")
 include("utils.jl")

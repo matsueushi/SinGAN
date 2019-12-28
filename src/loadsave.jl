@@ -40,6 +40,9 @@ function generate_dirs(max_step)
     end
 end
 
+"""
+    Load/Save
+"""
 scaled_real_savepath(n) = @sprintf("./output/real/step%03d.png", n)
 fake_adv_savepath(n, epoch) = @sprintf("./output/fake/step%03d/adv/epoch%05d.png", n, epoch)
 fake_rec_savepath(n, epoch) = @sprintf("./output/fake/step%03d/rec/epoch%05d.png", n, epoch)
@@ -62,7 +65,7 @@ end
 function save_scaled_reals(real_img_p) 
     # save real images
     for (n, img) in enumerate(real_img_p)
-        save_array_as_image(scaled_real_savepath(n), img[:, :, :, 1])
+        save_array_as_image(scaled_real_savepath(n), view(img, :, :, :, 1))
     end
 end
 
@@ -89,7 +92,7 @@ function load_with_batchnorm!(chain::Chain, data)
     end
 end
 
-function load_model_params!(dscrp, genp, max_stage)
+function load_model_params!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, max_stage::Integer)
     for i in 1:max_stage
         @load discriminator_savepath(i) dscr
         load_with_batchnorm!(dscrp.chain[i], dscr |> gpu)
@@ -97,4 +100,12 @@ function load_model_params!(dscrp, genp, max_stage)
         @load generator_savepath(i) gen
         load_with_batchnorm!(genp.chain[i], gen |> gpu)
     end
+end
+
+function save_model_params(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, st::Integer)
+    dscr = dscrp.chains[st] |> cpu
+    @save discriminator_savepath(st) dscr
+
+    gen = genp.chains[st] |> cpu
+    @save generator_savepath(st) gen
 end

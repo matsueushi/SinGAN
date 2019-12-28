@@ -34,6 +34,10 @@ function DiscriminatorPyramid(n_stage::Integer, n_layers::Integer)
     return DiscriminatorPyramid(gpu.(ds)...)
 end
 
+function DiscriminatorPyramid(image_shapes::Vector{Tuple{Int64,Int64}}, n_layers::Integer)
+    DiscriminatorPyramid(Base.length(image_shapes), n_layers)
+end
+
 function Base.show(io::IO, d::DiscriminatorPyramid)
     print(io, "DiscriminatorPyramid(")
     join(io, d.chains, ", \n")
@@ -52,7 +56,7 @@ end
 
 function (nc::NoiseConnection)(prev::T, noise::T) where {T <: AbstractArray{Float32,4}}
     pad = nc.pad
-    raw_output = nc.layers(noise + prev) + prev
+    raw_output = nc.layers(noise + prev)::T + prev
     return raw_output[1 + pad:end - pad, 1 + pad:end - pad, :, :]
 end
 
@@ -74,7 +78,7 @@ end
 build_single_gen_layers(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
 build_single_generator(n_layers, conv_chs, pad) = NoiseConnection(build_single_gen_layers(n_layers, conv_chs), pad)
 
-function GeneratorPyramid(image_shapes, n_layers, pad = 5)
+function GeneratorPyramid(image_shapes::Vector{Tuple{Int64,Int64}}, n_layers::Integer, pad::Integer = 5)
     n_stage = Base.length(image_shapes)
     # receptive field = 11, floor(11/2) = 5
     noise_shapes = [2 * pad .+ s for s in image_shapes]

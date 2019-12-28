@@ -1,5 +1,3 @@
-
-
 @testset "build_single_discrimiantor" begin
     noise_size = (64, 64, 3, 10)
     noise = randn(Float32, noise_size)
@@ -29,6 +27,13 @@ end
     # @code_warntype nc(prev, noise)
 end
 
+# @testset "NoiseConnectionInferType" begin
+#     nc = SinGAN.NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
+#     prev = randn(Float32, 128, 128, 3, 1)
+#     noise = randn(Float32, 128, 128, 3, 1)
+#     @time for i in 1:100 nc(prev, noise) end
+# end
+
 @testset "GeneratorPyramid" begin
     image_shapes = [(32, 32), (44, 44)]
     genp = SinGAN.GeneratorPyramid(image_shapes, 5)
@@ -40,4 +45,5 @@ end
     @test size(genp(xs, 1, false)) == (32, 32, 3, 1)
     @test size(genp(xs, 1, true)) == (54, 54, 3, 1)
     @test size(genp(xs, 2, false)) == (44, 44, 3, 1)
+    # @code_warntype genp(xs, 2, false)
 end

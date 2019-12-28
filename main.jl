@@ -10,14 +10,13 @@ function main()
     image_size = (20, 20)
     image_shapes = SinGAN.size_pyramid(scale, min_size, image_size)
 
-    n_stage = Base.length(image_shapes)
-    n_layers = 3
+    n_layers = 5
 
-    dscrp = DiscriminatorPyramid(n_stage, n_layers) |> gpu
+    dscrp = DiscriminatorPyramid(image_shapes, n_layers) |> gpu
     genp = GeneratorPyramid(image_shapes, n_layers) |> gpu
 
-    # orig_img = randn(Float32, SinGAN.expand_dim(image_size))
-    orig_rgb_img = load("artwork.jpg")
+    img_name = "artwork.jpg"
+    orig_rgb_img = load(img_name)
     orig_img = SinGAN.rgb_to_array(orig_rgb_img) |> gpu
 
     real_img_p = SinGAN.build_image_pyramid(orig_img, image_shapes, image_shapes)
