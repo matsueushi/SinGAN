@@ -69,7 +69,12 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     for _ in 1:loop_dscr
         noise_adv = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
         g_fake_adv = genp(noise_adv, st, false)
-        loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
+
+        # add noise to real
+        real_noise = amplifiers[st] * randn!(similar(real_img))
+        loss_dscr = update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
+
+        # loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
     end
 
     # generator
@@ -110,7 +115,7 @@ function train!(dscrp, genp, real_img_p,
         opt_gen = ADAM(lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
-        prev_rec = genp(fixed_noise_rec, st-1, true) # padded
+        prev_rec = genp(fixed_noise_rec, st - 1, true) # padded
         prev_rec_crop = @view prev_rec[1 + genp.pad:end - genp.pad, 1 + genp.pad:end - genp.pad, :, :]
         rmse = sqrt(mse(real_img_p[st], prev_rec_crop))
         amp = rmse * amplifier_init
@@ -151,7 +156,7 @@ function train!(dscrp, genp, real_img_p,
         dscr = dscrp.chains[st] |> cpu
         @save discriminator_savepath(st) dscr
 
-        gen = genp.chains[st]|> cpu
+        gen = genp.chains[st] |> cpu
         @save generator_savepath(st) gen
     end
 

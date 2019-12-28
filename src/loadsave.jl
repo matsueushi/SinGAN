@@ -17,7 +17,7 @@ end
 function save_array_as_image(path, array::AbstractArray{Float32,3})
     array = clamp.(array, -1f0, 1f0)
     img = permutedims(array, (3, 1, 2)) |> cpu
-    img = (img .+ 1f0) ./ 2f0
+    img = @. (img + 1f0) / 2f0
     save(path, colorview(RGB, img))
 end
 
@@ -50,12 +50,12 @@ function save_training_loss(st, epoch, loss_dscr, loss_gen_adv, loss_gen_rec)
     path = @sprintf("./output/loss/step%03d_loss.csv", st)
     if epoch == 1
         open(path, "w") do io
-            write(io, "epoch,loss_dscr,loss_gen_adv,loss_gen_rec\n")
+            println(io, "epoch,loss_dscr,loss_gen_adv,loss_gen_rec")
         end
     end
 
     open(path, "a") do io
-        write(io, @sprintf("%d,%06f,%06f,%06f\n", epoch, loss_dscr, loss_gen_adv, loss_gen_rec))
+        println(io, epoch, ",", loss_dscr, ",", loss_gen_adv, ",", loss_gen_rec)
     end
 end
 
@@ -70,12 +70,12 @@ function save_noise_amplifiers(st, noise_amplifier)
     path = "./output/noise_amplifiers.csv"
     if st == 1
         open(path, "w") do io
-            write(io, "noise_amplifiers\n")
+            println(io, "noise_amplifiers")
         end
     end
 
     open(path, "a") do io
-        write(io, @sprintf("%06f\n", noise_amplifier))
+        println(io, noise_amplifier)
     end
 end
 

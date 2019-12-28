@@ -5,7 +5,7 @@ using Flux
 
 function main()
 
-    scale = 4/3
+    scale = 4 / 3
     min_size = (16, 16)
     image_size = (20, 20)
     image_shapes = SinGAN.size_pyramid(scale, min_size, image_size)
@@ -22,13 +22,10 @@ function main()
 
     real_img_p = SinGAN.build_image_pyramid(orig_img, image_shapes, image_shapes)
 
-    max_epoch = 2000
-    reduce_lr_epoch = 1600
+    max_epoch = 20
+    reduce_lr_epoch = 16
     save_image_every_epoch = 500
     save_loss_every_epoch = 100
-
-    # max_epoch = 2000
-    # reduce_lr_epoch = 1600
 
     loop_dscr = 3
     loop_gen = 3
@@ -36,7 +33,7 @@ function main()
     lr_dscr = 5e-4
     lr_gen = 5e-4
 
-    alpha = 50f0
+    alpha = 10f0
 
     train!(dscrp, genp, real_img_p, 
         max_epoch, reduce_lr_epoch, save_image_every_epoch, save_loss_every_epoch,

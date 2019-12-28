@@ -10,7 +10,7 @@ function size_pyramid(scale, min_size, image_size)
     return pyramid
 end
 
-channel_pyramid(n_stage) = min.([32 * 2^(floor(Int64, s/4)) for s in 1:n_stage], 128)
+channel_pyramid(n_stage) = min.([32 * 2^(floor(Int64, s / 4)) for s in 1:n_stage], 128)
 
 # Re-define leakyrelu function
 # https://github.com/FluxML/Flux.jl/issues/963
@@ -24,7 +24,7 @@ conv_block(in, out) = [
 
 function build_layer(n_layers, in_chs, conv_chs, out_chs, σ)
     layers = conv_block(in_chs, conv_chs)
-    for _ in 1:n_layers-2
+    for _ in 1:n_layers - 2
         push!(layers, conv_block(conv_chs, conv_chs)...)
     end
     tail_layer = Conv((3, 3), conv_chs => out_chs, σ;
@@ -36,7 +36,7 @@ end
 """
     DiscriminatorPyramid
 """
-mutable struct DiscriminatorPyramid{T<:Tuple}
+mutable struct DiscriminatorPyramid{T <: Tuple}
     chains::T
     DiscriminatorPyramid(xs...) = new{typeof(xs)}(xs)
 end
@@ -64,10 +64,10 @@ end
 
 @Flux.functor NoiseConnection
 
-function (nc::NoiseConnection)(prev::T, noise::T) where {T<:AbstractArray{Float32,4}}
+function (nc::NoiseConnection)(prev::T, noise::T) where {T <: AbstractArray{Float32,4}}
     pad = nc.pad
     raw_output = nc.layers(noise + prev) + prev
-    return raw_output[1 + pad:end-pad, 1 + pad:end-pad, :, :]
+    return raw_output[1 + pad:end - pad, 1 + pad:end - pad, :, :]
 end
 
 function Base.show(io::IO, nc::NoiseConnection)
@@ -77,9 +77,9 @@ end
 """
     GeneratorPyramid
 """
-mutable struct GeneratorPyramid{T<:Tuple}
-    image_shapes::Vector{Tuple{Int64, Int64}}
-    noise_shapes::Vector{Tuple{Int64, Int64}}
+mutable struct GeneratorPyramid{T <: Tuple}
+    image_shapes::Vector{Tuple{Int64,Int64}}
+    noise_shapes::Vector{Tuple{Int64,Int64}}
     pad::Int64
     chains::T
     GeneratorPyramid(image_shapes, noise_shapes, pad, xs...) = new{typeof(xs)}(image_shapes, noise_shapes, pad, xs)
@@ -105,7 +105,7 @@ function Base.show(io::IO, d::GeneratorPyramid)
     print(io, ")")
 end
 
-function (genp::GeneratorPyramid)(xs::AbstractVector{T}, st::Integer, resize::Bool) where {T<:AbstractArray{Float32,4}}
+function (genp::GeneratorPyramid)(xs::AbstractVector{T}, st::Integer, resize::Bool) where {T <: AbstractArray{Float32,4}}
     if st == 0
         zeros_shape = resize ? first(genp.noise_shapes) : first(genp.image_shapes)
         return zeros_like(T, expand_dim(zeros_shape...))
