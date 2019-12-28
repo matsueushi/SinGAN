@@ -67,7 +67,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
 
     # discriminator
     for _ in 1:loop_dscr
-        noise_adv = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
         g_fake_adv = genp(noise_adv, st, false)
 
         # add noise to real
@@ -83,7 +83,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
         loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
 
         # adv
-        noise_adv_full = build_noise_vector(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        noise_adv_full = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
         prev_adv = genp(noise_adv_full, st - 1, true)
         loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
     end
@@ -105,7 +105,7 @@ function train!(dscrp, genp, real_img_p,
     amplifiers = Float32[]
 
     # fixed noise for rec
-    fixed_noise_rec = build_rec_vector(first(real_img_p), genp.noise_shapes, amplifier_init)
+    fixed_noise_rec = build_rec_pyramid(first(real_img_p), genp.noise_shapes, amplifier_init)
     adv_noise_anime = similar(fixed_noise_rec)
     
     for st in 1:stages

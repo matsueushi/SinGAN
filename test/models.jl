@@ -1,14 +1,4 @@
-@testset "size_pyramid" begin
-    @test SinGAN.size_pyramid(4 / 3, (32, 32), (400, 300)) == 
-        [(32, 32), (42, 42), (56, 56), (75, 75), (101, 101), 
-         (134, 134), (179, 179), (239, 239), (319, 300), (400, 300)]
-    @test SinGAN.size_pyramid(4 / 3, (32, 32), (128, 128)) == 
-        [(32, 32), (42, 42), (56, 56), (75, 75), (101, 101), (128, 128)]
-end
 
-@testset "channel_pyramid" begin
-    @test SinGAN.channel_pyramid(5) == [32, 32, 32, 64, 64]
-end
 
 @testset "build_single_discrimiantor" begin
     noise_size = (64, 64, 3, 10)

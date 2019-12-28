@@ -1,17 +1,3 @@
-function size_pyramid(scale, min_size, image_size)
-    current_size = min_size 
-    pyramid = Vector{Tuple{Int64,Int64}}()
-    for i in 1:100
-        push!(pyramid, current_size)
-        current_size == image_size && break
-        current_size = @. floor(min_size * scale^i)
-        current_size = min.(current_size, image_size)
-    end
-    return pyramid
-end
-
-channel_pyramid(n_stage) = min.([32 * 2^(floor(Int64, s / 4)) for s in 1:n_stage], 128)
-
 # Re-define leakyrelu function
 # https://github.com/FluxML/Flux.jl/issues/963
 myleakyrelu(x::Real, a = oftype(x / one(x), 0.01)) = max(a * x, x / one(x))
