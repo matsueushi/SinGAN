@@ -71,7 +71,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
         g_fake_adv = genp(noise_adv, st, false)
 
         # add noise to real
-        real_noise = amplifiers[st] * randn!(similar(real_img))
+        real_noise = 0.5f0 * amplifiers[st] * randn!(similar(real_img))
         loss_dscr = update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
 
         # loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
@@ -129,7 +129,7 @@ function train!(dscrp, genp, real_img_p,
         fixed_noise_adv[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]...))
 
         save_noise_amplifiers(st, amp)
-        @info "Noise amplifier: $(amp)"
+        @info "Noise amplifier = $(amp)"
 
         for ep in 1:max_epoch
             # reduce learnint rate
@@ -145,15 +145,11 @@ function train!(dscrp, genp, real_img_p,
 
             # save image/loss
             if ep == 1 || ep % save_image_every_epoch == 0 || ep == max_epoch
-                g_fake_rec = genp(fixed_noise_rec, st, false)
-                save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
-
-                g_fake_adv = genp(fixed_noise_adv, st, false)
-                save_array_as_image(fake_adv_savepath(st, ep), view(g_fake_adv, :, :, :, 1))
+                save_generated_images(genp, fixed_noise_rec, fixed_noise_adv, st, ep)
             end
 
             if ep == 1 || ep % save_loss_every_epoch == 0 || ep == max_epoch
-                @info "Epoch $(ep), loss_dscr $(loss_dscr), loss_gen_adv $(loss_gen_adv), loss_gen_rec $(loss_gen_rec)"
+                @info "Epoch $(ep)" loss_dscr loss_gen_adv loss_gen_rec
                 save_training_loss(st, ep, loss_dscr, loss_gen_adv, loss_gen_rec)
             end
         end
@@ -162,4 +158,4 @@ function train!(dscrp, genp, real_img_p,
     end
 
     return amplifiers
-end
+    end

@@ -41,7 +41,7 @@ function generate_dirs(max_step)
 end
 
 """
-    Load/Save
+    Load/Save paths
 """
 scaled_real_savepath(n) = @sprintf("./output/real/step%03d.png", n)
 fake_adv_savepath(n, epoch) = @sprintf("./output/fake/step%03d/adv/epoch%05d.png", n, epoch)
@@ -49,23 +49,38 @@ fake_rec_savepath(n, epoch) = @sprintf("./output/fake/step%03d/rec/epoch%05d.png
 discriminator_savepath(n) = @sprintf("./output/weights/dscr_step%03d.bson", n)
 generator_savepath(n) = @sprintf("./output/weights/gen_step%03d.bson", n)
 
-function save_training_loss(st, epoch, loss_dscr, loss_gen_adv, loss_gen_rec)
+"""
+    Save images
+"""
+function save_scaled_reals(real_img_p) 
+    # save real images
+    for (n, img) in enumerate(real_img_p)
+        save_array_as_image(scaled_real_savepath(n), view(img, :, :, :, 1))
+    end
+end
+
+function save_generated_images(genp::GeneratorPyramid, noise_rec::AbstractVector{T}, 
+            noise_adv::AbstractVector{T}, st::Integer, ep::Integer) where{T <: AbstractArray{Float32,4}}
+    g_fake_rec = genp(noise_rec, st, false)
+    save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
+
+    g_fake_adv = genp(noise_adv, st, false)
+    save_array_as_image(fake_adv_savepath(st, ep), view(g_fake_adv, :, :, :, 1))
+end
+
+"""
+    Save params/result
+"""
+function save_training_loss(st, ep, loss_dscr, loss_gen_adv, loss_gen_rec)
     path = @sprintf("./output/loss/step%03d_loss.csv", st)
-    if epoch == 1
+    if ep == 1
         open(path, "w") do io
             println(io, "epoch,loss_dscr,loss_gen_adv,loss_gen_rec")
         end
     end
 
     open(path, "a") do io
-        println(io, epoch, ",", loss_dscr, ",", loss_gen_adv, ",", loss_gen_rec)
-    end
-end
-
-function save_scaled_reals(real_img_p) 
-    # save real images
-    for (n, img) in enumerate(real_img_p)
-        save_array_as_image(scaled_real_savepath(n), view(img, :, :, :, 1))
+        println(io, ep, ",", loss_dscr, ",", loss_gen_adv, ",", loss_gen_rec)
     end
 end
 

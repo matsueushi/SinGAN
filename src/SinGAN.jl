@@ -4,7 +4,7 @@ using Adapt
 using BSON: @load, @save
 using CuArrays
 using Flux
-using Flux: mse, pullback
+using Flux: mse, pullback, glorot_normal
 using Flux.Optimise: update!
 using Random
 

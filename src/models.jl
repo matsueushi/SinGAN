@@ -3,18 +3,18 @@
 myleakyrelu(x::Real, a = oftype(x / one(x), 0.01)) = max(a * x, x / one(x))
 
 conv_block(in, out) = [
-        Conv((3, 3), in => out; init = Flux.glorot_normal, pad = (1, 1)),
+        Conv((3, 3), in => out; init = glorot_normal, pad = (1, 1)),
         BatchNorm(out),
         x->myleakyrelu.(x, 0.2f0)
     ]
 
-function build_layer(n_layers, in_chs, conv_chs, out_chs, σ)
+function build_layers(n_layers, in_chs, conv_chs, out_chs, σ)
     layers = conv_block(in_chs, conv_chs)
     for _ in 1:n_layers - 2
         push!(layers, conv_block(conv_chs, conv_chs)...)
     end
     tail_layer = Conv((3, 3), conv_chs => out_chs, σ;
-        init = Flux.glorot_normal, pad = (1, 1))
+        init = glorot_normal, pad = (1, 1))
     push!(layers, tail_layer)
     return Chain(layers...)
 end
@@ -27,7 +27,7 @@ mutable struct DiscriminatorPyramid{T <: Tuple}
     DiscriminatorPyramid(xs...) = new{typeof(xs)}(xs)
 end
 
-build_single_discriminator(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 1, identity)
+build_single_discriminator(n_layers, conv_chs) = build_layers(n_layers, 3, conv_chs, 1, identity)
 
 function DiscriminatorPyramid(n_stage::Integer, n_layers::Integer)
     ds = build_single_discriminator.(n_layers, channel_pyramid(n_stage))
@@ -75,7 +75,7 @@ mutable struct GeneratorPyramid{T <: Tuple}
     GeneratorPyramid(image_shapes, noise_shapes, pad, xs...) = new{typeof(xs)}(image_shapes, noise_shapes, pad, xs)
 end
 
-build_single_gen_layers(n_layers, conv_chs) = build_layer(n_layers, 3, conv_chs, 3, tanh)
+build_single_gen_layers(n_layers, conv_chs) = build_layers(n_layers, 3, conv_chs, 3, tanh)
 build_single_generator(n_layers, conv_chs, pad) = NoiseConnection(build_single_gen_layers(n_layers, conv_chs), pad)
 
 function GeneratorPyramid(image_shapes::Vector{Tuple{Int64,Int64}}, n_layers::Integer, pad::Integer = 5)
@@ -100,12 +100,7 @@ function (genp::GeneratorPyramid)(xs::AbstractVector{T}, st::Integer, resize::Bo
         zeros_shape = resize ? first(genp.noise_shapes) : first(genp.image_shapes)
         return zeros_like(T, expand_dim(zeros_shape...))
     end
-
     prev = genp(xs, st - 1, true)
     out = genp.chains[st](prev, xs[st])
-    if resize
-        return resize_and_padding(out, genp.image_shapes[st + 1], genp.noise_shapes[st + 1])
-    else
-        return out
-    end
+    return resize ? resize_and_padding(out, genp.image_shapes[st + 1], genp.noise_shapes[st + 1]) : out
 end
