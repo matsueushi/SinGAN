@@ -1,0 +1,17 @@
+{
+    "scale": 1.3333333333333333,
+    "min_size_x": 25,
+    "min_size_y": 25,
+    "img_size_x": 30,
+    "img_size_y": 30,
+    "n_layers": 5,
+    "max_epoch": 20,
+    "reduce_lr_epoch": 1600,
+    "save_image_every_epoch": 500,
+    "save_loss_every_epoch": 100,
+    "loop_dscr": 3,
+    "loop_gen": 3,
+    "lr_dscr": 0.0005,
+    "lr_gen": 0.0005,
+    "alpha": 50.0
+}

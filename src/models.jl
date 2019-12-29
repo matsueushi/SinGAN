@@ -104,3 +104,35 @@ function (genp::GeneratorPyramid)(xs::AbstractVector{T}, st::Integer, resize::Bo
     out = genp.chains[st](prev, xs[st])
     return resize ? resize_and_padding(out, genp.image_shapes[st + 1], genp.noise_shapes[st + 1]) : out
 end
+
+"""
+    HyperParams
+"""
+mutable struct HyperParams
+    scale::Float64                  # progression scale, > 1
+    min_size_x::Int64               # minimal image width
+    min_size_y::Int64               # minimal image height
+    img_size_x::Int64               # output image width
+    img_size_y::Int64
+    n_layers::Int64
+    max_epoch::Int64
+    reduce_lr_epoch::Int64
+    save_image_every_epoch::Int64
+    save_loss_every_epoch::Int64
+    loop_dscr::Int64
+    loop_gen::Int64
+    lr_dscr::Float64
+    lr_gen::Float64
+    alpha::Float32
+    HyperParams() = new(4/3, 25, 25, 128, 128, 5, 2000, 1600, 500, 100, 3, 3, 5e-4, 5e-4, 50f0)
+end
+
+show_dict(hp::HyperParams) = OrderedDict(string(nm) => getfield(hp, nm) for nm in fieldnames(HyperParams))
+image_shapes(hp::HyperParams) = size_pyramid(hp.scale, (hp.min_size_x, hp.min_size_y), (hp.img_size_x, hp.img_size_y))
+
+function setup_models(hp::HyperParams)
+    img_shapes = image_shapes(hp)
+    dscrp = DiscriminatorPyramid(img_shapes, hp.n_layers) |> gpu
+    genp = GeneratorPyramid(img_shapes, hp.n_layers) |> gpu
+    return dscrp, genp
+end

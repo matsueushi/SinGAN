@@ -16,9 +16,10 @@ julia --project main.jl
 [Supplementary Material](https://tomer.net.technion.ac.il/files/2019/09/SingleImageGan_SM.pdf)  
 [tamarott/SinGAN - Official PyTorch implementation](https://github.com/tamarott/SinGAN)
 
-## Other
-[FriedRonaldo/SinGAN](https://github.com/FriedRonaldo/SinGAN)  
+## Resources about SinGAN
+[FriedRonaldo/SinGAN - Other Pytorch implementation](https://github.com/FriedRonaldo/SinGAN)  
 [【SinGAN】たった１枚の画像から多様な画像生成タスクが可能に](https://qiita.com/kuto/items/ff2a30ca939ffdcd3cc1)  
-[SinGANの論文を読んだらテラすごかった](https://qiita.com/yoyoyo_/items/81f0b4ca899152ac8806)
-[GAN models #47](https://github.com/FluxML/model-zoo/pull/47)
-[How to upsample an array (or image)](https://discourse.julialang.org/t/how-to-upsample-an-array-or-image/12415)
+[SinGANの論文を読んだらテラすごかった](https://qiita.com/yoyoyo_/items/81f0b4ca899152ac8806)  
+
+## Other
+[GAN models #47](https://github.com/FluxML/model-zoo/pull/47)  

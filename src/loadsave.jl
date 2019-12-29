@@ -60,12 +60,31 @@ function save_scaled_reals(real_img_p)
 end
 
 function save_generated_images(genp::GeneratorPyramid, noise_rec::AbstractVector{T}, 
-            noise_adv::AbstractVector{T}, st::Integer, ep::Integer) where{T <: AbstractArray{Float32,4}}
+            noise_adv::AbstractVector{T}, st::Integer, ep::Integer) where {T <: AbstractArray{Float32,4}}
     g_fake_rec = genp(noise_rec, st, false)
     save_array_as_image(fake_rec_savepath(st, ep), view(g_fake_rec, :, :, :, 1))
 
     g_fake_adv = genp(noise_adv, st, false)
     save_array_as_image(fake_adv_savepath(st, ep), view(g_fake_adv, :, :, :, 1))
+end
+
+"""
+    Load/Save hyperparameters
+"""
+function save_hyperparams(path, hp::HyperParams)
+    open(path, "w") do io
+        JSON.print(io, show_dict(hp), 4)
+    end    
+end
+
+function load_hyperparams(path)
+    hp = HyperParams()
+    js = JSON.parsefile(path, inttype=Int64)
+    foreach(js) do (k, v)
+        sk = Symbol(k)
+        setfield!(hp, sk, oftype(getfield(hp, sk), v))
+    end
+    return hp
 end
 
 """

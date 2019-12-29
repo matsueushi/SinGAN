@@ -98,9 +98,8 @@ function estimate_noise_amplifier(prev_rec::AbstractArray{Float32,4}, real_img::
     return rmse * amplifier_init
 end
 
-function train!(dscrp, genp, real_img_p,
-        max_epoch, reduce_lr_epoch, save_image_every_epoch, save_loss_every_epoch,
-        loop_dscr, loop_gen, lr_dscr, lr_gen, alpha)
+function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, 
+        real_img_p::Vector{T}, hp::HyperParams) where {T <: AbstractArray{Float32,4}}
     stages = Base.length(genp.image_shapes)
     generate_dirs(stages)
     save_scaled_reals(real_img_p)
@@ -118,8 +117,8 @@ function train!(dscrp, genp, real_img_p,
     for st in 1:stages
         @info "Step $(st)"
         # reset optimizer
-        opt_dscr = ADAM(lr_dscr, (0.5, 0.999))
-        opt_gen = ADAM(lr_gen, (0.5, 0.999))
+        opt_dscr = ADAM(hp.lr_dscr, (0.5, 0.999))
+        opt_gen = ADAM(hp.lr_gen, (0.5, 0.999))
 
         # calculate noise amplifier
         prev_rec = genp(fixed_noise_rec, st - 1, true) # padded
@@ -131,24 +130,24 @@ function train!(dscrp, genp, real_img_p,
         save_noise_amplifiers(st, amp)
         @info "Noise amplifier = $(amp)"
 
-        for ep in 1:max_epoch
+        for ep in 1:hp.max_epoch
             # reduce learnint rate
-            if ep == reduce_lr_epoch
+            if ep == hp.reduce_lr_epoch
                 @info "Reduce learning rate"
                 opt_dscr.eta /= 10
                 opt_gen.eta /= 10
             end
 
             loss_dscr, loss_gen_rec, loss_gen_adv = 
-                train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
-                    dscrp.chains[st], genp, prev_rec, fixed_noise_rec[st], real_img_p[st], amplifiers, alpha)
+                train_epoch!(opt_dscr, opt_gen, st, hp.loop_dscr, hp.loop_gen,
+                    dscrp.chains[st], genp, prev_rec, fixed_noise_rec[st], real_img_p[st], amplifiers, hp.alpha)
 
             # save image/loss
-            if ep == 1 || ep % save_image_every_epoch == 0 || ep == max_epoch
+            if ep == 1 || ep % hp.save_image_every_epoch == 0 || ep == hp.max_epoch
                 save_generated_images(genp, fixed_noise_rec, fixed_noise_adv, st, ep)
             end
 
-            if ep == 1 || ep % save_loss_every_epoch == 0 || ep == max_epoch
+            if ep == 1 || ep % hp.save_loss_every_epoch == 0 || ep == hp.max_epoch
                 @info "Epoch $(ep)" loss_dscr loss_gen_adv loss_gen_rec
                 save_training_loss(st, ep, loss_dscr, loss_gen_adv, loss_gen_rec)
             end
