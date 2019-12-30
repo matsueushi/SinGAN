@@ -7,7 +7,7 @@ using Printf
 function rgb_to_array(img_rgb)
     # Image -> 3D array
     # CHW -> WHC
-    array = permutedims(Float32.(channelview(img_rgb)), (2, 3, 1))
+    array = permutedims(Float32.(channelview(img_rgb)), (3, 2, 1))
     # [0, 1] -> [-1, 1]
     array = @. 2f0 * array - 1f0
     # 3D -> 4D
@@ -16,7 +16,7 @@ end
 
 function save_array_as_image(path, array::AbstractArray{Float32,3})
     array = clamp.(array, -1f0, 1f0)
-    img = permutedims(array, (3, 1, 2)) |> cpu
+    img = permutedims(array, (3, 2, 1)) |> cpu
     img = @. (img + 1f0) / 2f0
     save(path, colorview(RGB, img))
 end

@@ -2,12 +2,12 @@
     loss functions
 """
 function discriminator_loss(d_real, d_g_fake_adv)
-    real_loss = mse(1f0, d_real)
-    fake_loss = mse(0f0, d_g_fake_adv)
+    real_loss = mse(1f0, mean(d_real; dims = (1, 2)))
+    fake_loss = mse(0f0, mean(d_g_fake_adv; dims = (1, 2)))
     return real_loss + fake_loss
 end
 
-generator_adv_loss(d_g_fake_adv) = mse(1f0, d_g_fake_adv)
+generator_adv_loss(d_g_fake_adv) = mse(1f0, mean(d_g_fake_adv; dims = (1, 2)))
 
 generator_rec_loss(real_img, g_fake_rec) = mse(real_img, g_fake_rec)
 
@@ -99,7 +99,7 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     d_g_fake_adv = dscr(g_fake_adv)
     loss_gen_adv = generator_adv_loss(d_g_fake_adv)
     g_fake_rec = genp.chains[st](prev_rec, noise_rec)
-    loss_gen_rec = alpha * generator_rec_loss(real_img, g_fake_rec) 
+    loss_gen_rec = generator_rec_loss(real_img, g_fake_rec) 
 
     return loss_dscr, loss_gen_adv, loss_gen_rec
 end
