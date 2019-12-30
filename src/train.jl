@@ -27,23 +27,35 @@ end
 """
     update generator
 """
-function update_generator_rec!(opt, gen, real_img, prev_rec, noise_rec, alpha)
+# function update_generator_rec!(opt, gen, real_img, prev_rec, noise_rec, alpha)
+#     @eval Flux.istraining() = true
+#     ps = params(gen)
+#     grad = gradient(ps) do
+#         g_fake_rec = gen(prev_rec, noise_rec)
+#         alpha * generator_rec_loss(real_img, g_fake_rec)
+#     end
+#     update!(opt, ps, grad)
+#     @eval Flux.istraining() = false
+# end
+
+# function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
+#     @eval Flux.istraining() = true
+#     ps = params(gen)
+#     grad = gradient(ps) do
+#         d_g_fake_adv = dscr(gen(prev_adv, noise_adv))
+#         generator_adv_loss(d_g_fake_adv)
+#     end
+#     update!(opt, ps, grad)
+#     @eval Flux.istraining() = false
+# end
+
+function update_generator!(opt, dscr, gen, real_img, prev_rec, prev_adv, noise_rec, noise_adv, alpha)
     @eval Flux.istraining() = true
     ps = params(gen)
     grad = gradient(ps) do
         g_fake_rec = gen(prev_rec, noise_rec)
-        alpha * generator_rec_loss(real_img, g_fake_rec)
-    end
-    update!(opt, ps, grad)
-    @eval Flux.istraining() = false
-end
-
-function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
-    @eval Flux.istraining() = true
-    ps = params(gen)
-    grad = gradient(ps) do
         d_g_fake_adv = dscr(gen(prev_adv, noise_adv))
-        generator_adv_loss(d_g_fake_adv)
+        generator_adv_loss(d_g_fake_adv) + alpha * generator_rec_loss(real_img, g_fake_rec)
     end
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
@@ -74,9 +86,11 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
         # adv
         noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
         prev_adv = genp(noise_adv, st - 1, true)
-        update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv))
+        # update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv))
         # rec
         # update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
+
+        update_generator!(opt_gen, dscr, genp.chains[st], real_img, prev_rec, prev_adv, noise_rec, last(noise_adv), alpha)
     end
 
     noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
