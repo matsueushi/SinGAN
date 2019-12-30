@@ -13,9 +13,10 @@ function main()
     orig_img = SinGAN.rgb_to_array(orig_rgb_img) |> gpu
     img_shapes = image_shapes(hp)
     real_img_p = SinGAN.build_image_pyramid(orig_img, img_shapes, img_shapes)
-    
-    train!(dscrp, genp, real_img_p, hp)
     # load_model_params!(dscrp, genp, Base.length(img_shapes))
+    
+    amplifiers, z_rec = train!(dscrp, genp, real_img_p, hp)
+    generate_animation(genp, 0.5f0, 0.5f0, first(amplifiers), z_rec, )
 end
 
 main()

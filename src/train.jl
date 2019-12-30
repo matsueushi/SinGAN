@@ -169,5 +169,5 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid,
         save_model_params(dscrp, genp, st)
     end
 
-    return amplifiers
-    end
+    return amplifiers, first(fixed_noise_rec)
+end

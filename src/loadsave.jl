@@ -48,6 +48,7 @@ fake_adv_savepath(n, epoch) = @sprintf("./output/fake/step%03d/adv/epoch%05d.png
 fake_rec_savepath(n, epoch) = @sprintf("./output/fake/step%03d/rec/epoch%05d.png", n, epoch)
 discriminator_savepath(n) = @sprintf("./output/weights/dscr_step%03d.bson", n)
 generator_savepath(n) = @sprintf("./output/weights/gen_step%03d.bson", n)
+animation_savepath(n) = @sprintf("./output/animation/img%04d.png", n)
 
 """
     Save images

@@ -12,11 +12,12 @@ using Random
 using Statistics
 
 export DiscriminatorPyramid, GeneratorPyramid, NoiseConnection, HyperParams, image_shapes, setup_models,
-        load_model_params!, train!, load_hyperparams, save_hyperparams
+        load_model_params!, train!, load_hyperparams, save_hyperparams, generate_animation
 
 include("models.jl")
 include("utils.jl")
 include("train.jl")
 include("loadsave.jl")
+include("animation.jl")
 
 end # module
