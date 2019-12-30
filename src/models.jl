@@ -124,7 +124,8 @@ mutable struct HyperParams
     lr_dscr::Float64                # discriminator learining rate
     lr_gen::Float64                 # generator learning rate
     alpha::Float32                  # rec loss coefficient
-    HyperParams() = new(4/3, 25, 25, 128, 128, 5, 2000, 1600, 500, 100, 3, 3, 5e-4, 5e-4, 50f0)
+    amplifier_init::Float32         # noise amplifier
+    HyperParams() = new(4/3, 25, 25, 128, 128, 5, 2000, 1600, 500, 100, 3, 3, 5e-4, 5e-4, 50f0, 1f0)
 end
 
 show_dict(hp::HyperParams) = OrderedDict(string(nm) => getfield(hp, nm) for nm in fieldnames(HyperParams))

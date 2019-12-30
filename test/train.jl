@@ -3,6 +3,7 @@
     d_g_fake_adv = zeros(Float32, 32, 32, 1, 1)
     @test SinGAN.discriminator_loss(d_real, d_g_fake_adv) ≈ 0f0
     @inferred Float32 SinGAN.discriminator_loss(d_real, d_g_fake_adv)
+    @code_warntype SinGAN.discriminator_loss(d_real, d_g_fake_adv)
 
     d_real = zeros(Float32, 32, 32, 1, 1)
     d_g_fake_adv = ones(Float32, 32, 32, 1, 1)
@@ -28,7 +29,7 @@ end
     real_img = ones(Float32, 2, 2, 3, 1)
     g_fake_adv = randn(Float32, 2, 2, 3, 1)
     @info SinGAN.update_discriminator!(opt, dscr, real_img, g_fake_adv)
-    @code_warntype(SinGAN.update_discriminator!(opt, dscr, real_img, g_fake_adv))
+    # @code_warntype(SinGAN.update_discriminator!(opt, dscr, real_img, g_fake_adv))
 end
 
 # @testset "update_generator_adv!" begin

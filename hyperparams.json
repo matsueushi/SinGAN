@@ -13,5 +13,6 @@
     "loop_gen": 3,
     "lr_dscr": 0.0005,
     "lr_gen": 0.0005,
-    "alpha": 50.0
+    "alpha": 50.0,
+    "amplifier_init": 0.1
 }

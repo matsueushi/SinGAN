@@ -120,11 +120,10 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid,
     @info dscrp
     @info genp
 
-    amplifier_init = 1f0
     amplifiers = Float32[]
 
     # fixed noise for rec
-    fixed_noise_rec = build_rec_pyramid(first(real_img_p), genp.noise_shapes, amplifier_init)
+    fixed_noise_rec = build_rec_pyramid(first(real_img_p), genp.noise_shapes, 1f0)
     fixed_noise_adv = similar(fixed_noise_rec)
     
     for st in 1:stages
@@ -135,7 +134,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid,
 
         # calculate noise amplifier
         prev_rec = genp(fixed_noise_rec, st - 1, true) # padded
-        amp = estimate_noise_amplifier(prev_rec, real_img_p[st], genp.pad, amplifier_init)
+        amp = st == 1 ? 1f0 : estimate_noise_amplifier(prev_rec, real_img_p[st], genp.pad, hp.amplifier_init)
         push!(amplifiers, amp)
         # add noise for adv 
         fixed_noise_adv[st] = amp * randn_like(prev_rec, expand_dim(genp.noise_shapes[st]...))
