@@ -113,17 +113,17 @@ mutable struct HyperParams
     min_size_x::Int64               # minimal image width
     min_size_y::Int64               # minimal image height
     img_size_x::Int64               # output image width
-    img_size_y::Int64
-    n_layers::Int64
-    max_epoch::Int64
-    reduce_lr_epoch::Int64
-    save_image_every_epoch::Int64
-    save_loss_every_epoch::Int64
-    loop_dscr::Int64
-    loop_gen::Int64
-    lr_dscr::Float64
-    lr_gen::Float64
-    alpha::Float32
+    img_size_y::Int64               # output image height
+    n_layers::Int64                 # number of conv layers
+    max_epoch::Int64                # training epochs
+    reduce_lr_epoch::Int64          # reduce learining rate after training `redule_lr_epoch` epochs
+    save_image_every_epoch::Int64   # save generated image every `save_image_every_epoch` epoch
+    save_loss_every_epoch::Int64    # save loss every `save_loss_every_epoch` epoch
+    loop_dscr::Int64                # training steps par descriminator training epoch
+    loop_gen::Int64                 # training steps par generator training epoch
+    lr_dscr::Float64                # discriminator learining rate
+    lr_gen::Float64                 # generator learning rate
+    alpha::Float32                  # rec loss coefficient
     HyperParams() = new(4/3, 25, 25, 128, 128, 5, 2000, 1600, 500, 100, 3, 3, 5e-4, 5e-4, 50f0)
 end
 

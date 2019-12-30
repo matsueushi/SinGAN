@@ -11,7 +11,7 @@ using OrderedCollections
 using Random
 
 export DiscriminatorPyramid, GeneratorPyramid, NoiseConnection, HyperParams, image_shapes, setup_models,
-        train!, load_hyperparams, save_hyperparams
+        load_model_params!, train!, load_hyperparams, save_hyperparams
 
 include("models.jl")
 include("utils.jl")

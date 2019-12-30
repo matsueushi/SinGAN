@@ -47,23 +47,22 @@ end
 """
     image pyramid
 """
-function build_image_pyramid(img::AbstractArray{Float32,4}, 
-            image_shapes::Vector{Tuple{Int64,Int64}}, noise_shapes::Vector{Tuple{Int64,Int64}})
+function build_image_pyramid(img::AbstractArray, image_shapes::Vector{Tuple{Int64,Int64}}, noise_shapes::Vector{Tuple{Int64,Int64}})
     return map((is, ns)->resize_and_padding(img, is, ns), image_shapes, noise_shapes)
 end
 
-function build_zero_pyramid(xs::AbstractArray{Float32,4}, shapes::Vector{Tuple{Int64,Int64}})
+function build_zero_pyramid(xs::AbstractArray, shapes::Vector{Tuple{Int64,Int64}})
     return map(s->zeros_like(xs, expand_dim(s...)), shapes)
 end
 
 """
     noise pyramid
 """
-function build_noise_pyramid(xs::AbstractArray{Float32,4}, shapes::Vector{Tuple{Int64,Int64}}, amplifiers::Vector{Float32})
+function build_noise_pyramid(xs::AbstractArray, shapes::Vector{Tuple{Int64,Int64}}, amplifiers::Vector{Float32})
     return map((s, a)->a * randn_like(xs, expand_dim(s...)), shapes, amplifiers)
 end
 
-function build_rec_pyramid(xs::AbstractArray{Float32,4}, shapes::Vector{Tuple{Int64,Int64}}, amplifier::Float32)
+function build_rec_pyramid(xs::AbstractArray, shapes::Vector{Tuple{Int64,Int64}}, amplifier::Float32)
     v = build_zero_pyramid(xs, shapes)
     randn!(v[1])
     v[1] *= amplifier

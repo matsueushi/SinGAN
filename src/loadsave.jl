@@ -129,10 +129,10 @@ end
 function load_model_params!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, max_stage::Integer)
     for i in 1:max_stage
         @load discriminator_savepath(i) dscr
-        load_with_batchnorm!(dscrp.chain[i], dscr |> gpu)
+        load_with_batchnorm!(dscrp.chains[i], dscr |> gpu)
 
         @load generator_savepath(i) gen
-        load_with_batchnorm!(genp.chain[i], gen |> gpu)
+        load_with_batchnorm!(genp.chains[i].layers, gen |> gpu)
     end
 end
 
@@ -140,6 +140,6 @@ function save_model_params(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid, 
     dscr = dscrp.chains[st] |> cpu
     @save discriminator_savepath(st) dscr
 
-    gen = genp.chains[st] |> cpu
+    gen = genp.chains[st].layers |> cpu
     @save generator_savepath(st) gen
 end

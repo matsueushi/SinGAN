@@ -15,11 +15,11 @@ end
 end
 
 @testset "DiscriminatorPyramid" begin
-    @info SinGAN.DiscriminatorPyramid(4, 5)
+    @info DiscriminatorPyramid(4, 5)
 end
 
 @testset "NoiseConnection" begin
-    nc = SinGAN.NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
+    nc = NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
     @info nc
     prev = randn(Float32, 42, 42, 3, 1)
     noise = randn(Float32, 42, 42, 3, 1)
@@ -28,7 +28,7 @@ end
 end
 
 # @testset "NoiseConnectionInferType" begin
-#     nc = SinGAN.NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
+#     nc = NoiseConnection(Conv((3, 3), 3 => 3, pad = 1), 5)
 #     prev = randn(Float32, 128, 128, 3, 1)
 #     noise = randn(Float32, 128, 128, 3, 1)
 #     @time for i in 1:100 nc(prev, noise) end
@@ -36,7 +36,7 @@ end
 
 @testset "GeneratorPyramid" begin
     image_shapes = [(32, 32), (44, 44)]
-    genp = SinGAN.GeneratorPyramid(image_shapes, 5)
+    genp = GeneratorPyramid(image_shapes, 5)
     @info genp
     @test genp.noise_shapes == [(42, 42), (54, 54)]
     xs = [randn(Float32, 42, 42, 3, 1), randn(Float32, 54, 54, 3, 1)] |> gpu
