@@ -246,28 +246,28 @@ uuid = "bbac6d45-d8f3-5730-bfe4-7a449cd117ca"
 version = "0.3.0"
 
 [[ImageAxes]]
-deps = ["AxisArrays", "Colors", "FixedPointNumbers", "ImageCore", "MappedArrays", "Reexport", "SimpleTraits"]
-git-tree-sha1 = "0da90109d2574cf540fae8e8c58dfdf1c7e347ce"
+deps = ["AxisArrays", "ImageCore", "MappedArrays", "Reexport", "SimpleTraits"]
+git-tree-sha1 = "75b0225bd999c4bdd83144f4b1b2437890050892"
 uuid = "2803e5a7-5153-5ecf-9a86-9b4c37f5f5ac"
-version = "0.6.1"
+version = "0.6.2"
 
 [[ImageCore]]
-deps = ["ColorTypes", "Colors", "FFTW", "FixedPointNumbers", "Graphics", "MappedArrays", "OffsetArrays", "PaddedViews", "Reexport"]
-git-tree-sha1 = "17a646b2b4f018d36170a99cb6a690773bb69ede"
+deps = ["Colors", "FixedPointNumbers", "Graphics", "MappedArrays", "OffsetArrays", "PaddedViews", "Reexport", "Requires"]
+git-tree-sha1 = "8bad767299f4eab28f231a92af2746137f3165af"
 uuid = "a09fc81d-aa75-5fe9-8630-4744c3626534"
-version = "0.8.7"
+version = "0.8.8"
 
 [[ImageDistances]]
-deps = ["ColorVectorSpace", "Colors", "Distances", "ImageCore", "LinearAlgebra", "MappedArrays", "Statistics"]
-git-tree-sha1 = "24b194fdc362bbb8cc6c26cfb8ad6789a06ea282"
+deps = ["ColorVectorSpace", "Distances", "ImageCore", "LinearAlgebra", "MappedArrays", "Statistics"]
+git-tree-sha1 = "cf9b02b9f5e33c768c223de6d8f7d1b6d0cf4136"
 uuid = "51556ac3-7006-55f5-8cb3-34580c88182d"
-version = "0.2.6"
+version = "0.2.7"
 
 [[ImageFiltering]]
-deps = ["CatIndices", "ColorVectorSpace", "Colors", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "FixedPointNumbers", "ImageCore", "LinearAlgebra", "MappedArrays", "OffsetArrays", "Requires", "StaticArrays", "Statistics", "TiledIteration"]
-git-tree-sha1 = "e7be8c871a1e38cd29d1e978f7bff3feb7079025"
+deps = ["CatIndices", "ColorVectorSpace", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "ImageCore", "LinearAlgebra", "MappedArrays", "OffsetArrays", "Requires", "StaticArrays", "Statistics", "TiledIteration"]
+git-tree-sha1 = "140b142f160a29acd60f41c750d039de60260bc9"
 uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
-version = "0.6.5"
+version = "0.6.8"
 
 [[ImageMagick]]
 deps = ["BinaryProvider", "ColorTypes", "FileIO", "FixedPointNumbers", "ImageCore", "InteractiveUtils", "Libdl", "Pkg", "Random"]
@@ -288,10 +288,10 @@ uuid = "787d08f9-d448-5407-9aad-5290dd7ab264"
 version = "0.2.4"
 
 [[ImageShow]]
-deps = ["Base64", "ColorTypes", "Colors", "FileIO", "FixedPointNumbers", "ImageCore", "OffsetArrays", "Requires"]
-git-tree-sha1 = "c23323afc82b6b553e6b2244d531e50858ea392c"
+deps = ["Base64", "FileIO", "ImageCore", "OffsetArrays", "Requires"]
+git-tree-sha1 = "8544e64c9cffd0d59e49a574851ac13bb2cbe6a7"
 uuid = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
-version = "0.2.0"
+version = "0.2.2"
 
 [[ImageTransformations]]
 deps = ["AxisAlgorithms", "ColorTypes", "ColorVectorSpace", "Colors", "CoordinateTransformations", "FixedPointNumbers", "IdentityRanges", "ImageCore", "Interpolations", "OffsetArrays", "StaticArrays"]

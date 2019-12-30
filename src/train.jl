@@ -17,10 +17,10 @@ generator_rec_loss(real_img, g_fake_rec) = mse(real_img, g_fake_rec)
 function update_discriminator!(opt, dscr, real_img, g_fake_adv)
     @eval Flux.istraining() = true
     ps = params(dscr)
-    loss, back = pullback(ps) do
+    loss, back = Zygote.pullback(ps) do
         discriminator_loss(dscr(real_img), dscr(g_fake_adv))
     end
-    grad = back(1f0)
+    grad = back(Zygote.sensitivity(loss))
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
     return loss::Float32
@@ -32,11 +32,11 @@ end
 function update_generator_rec!(opt, gen, real_img, prev_rec, noise_rec, alpha)
     @eval Flux.istraining() = true
     ps = params(gen)
-    loss, back = pullback(ps) do
+    loss, back = Zygote.pullback(ps) do
         g_fake_rec = gen(prev_rec, noise_rec)
         alpha * generator_rec_loss(real_img, g_fake_rec)
     end
-    grad = back(1f0)
+    grad = back(Zygote.sensitivity(loss))
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
     return loss::Float32
@@ -45,11 +45,11 @@ end
 function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     @eval Flux.istraining() = true
     ps = params(gen)
-    loss, back = pullback(ps) do
+    loss, back = Zygote.pullback(ps) do
         d_g_fake_adv = dscr(gen(prev_adv, noise_adv))
         generator_adv_loss(d_g_fake_adv)
     end
-    grad = back(1f0)
+    grad = back(Zygote.sensitivity(loss))
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
     return loss::Float32
@@ -71,24 +71,23 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
         g_fake_adv = genp(noise_adv, st, false)
 
         # add noise to real
-        real_noise = 0.5f0 * amplifiers[st] * randn!(similar(real_img))
-        loss_dscr = update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
+        # real_noise = 0.5f0 * amplifiers[st] * randn!(similar(real_img))
+        # loss_dscr = update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
 
-        # loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
+        loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
     end
 
     # generator
     for _ in 1:loop_gen
+        # adv
+        noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
+        prev_adv = genp(noise_adv, st - 1, true)
+        loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv))
         # rec
         loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
-
-        # adv
-        noise_adv_full = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
-        prev_adv = genp(noise_adv_full, st - 1, true)
-        loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv_full))
     end
 
-    return loss_dscr, loss_gen_rec, loss_gen_adv
+    return loss_dscr, loss_gen_adv, loss_gen_rec
 end
 
 function estimate_noise_amplifier(prev_rec::AbstractArray{Float32,4}, real_img::AbstractArray{Float32,4},
@@ -138,7 +137,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid,
                 opt_gen.eta /= 10
             end
 
-            loss_dscr, loss_gen_rec, loss_gen_adv = 
+            loss_dscr, loss_gen_adv, loss_gen_rec =
                 train_epoch!(opt_dscr, opt_gen, st, hp.loop_dscr, hp.loop_gen,
                     dscrp.chains[st], genp, prev_rec, fixed_noise_rec[st], real_img_p[st], amplifiers, hp.alpha)
 
