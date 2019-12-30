@@ -17,13 +17,11 @@ generator_rec_loss(real_img, g_fake_rec) = mse(real_img, g_fake_rec)
 function update_discriminator!(opt, dscr, real_img, g_fake_adv)
     @eval Flux.istraining() = true
     ps = params(dscr)
-    loss, back = Zygote.pullback(ps) do
+    grad = gradient(ps) do
         discriminator_loss(dscr(real_img), dscr(g_fake_adv))
     end
-    grad = back(Zygote.sensitivity(loss))
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
-    return loss::Float32
 end
 
 """
@@ -32,27 +30,23 @@ end
 function update_generator_rec!(opt, gen, real_img, prev_rec, noise_rec, alpha)
     @eval Flux.istraining() = true
     ps = params(gen)
-    loss, back = Zygote.pullback(ps) do
+    grad = gradient(ps) do
         g_fake_rec = gen(prev_rec, noise_rec)
         alpha * generator_rec_loss(real_img, g_fake_rec)
     end
-    grad = back(Zygote.sensitivity(loss))
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
-    return loss::Float32
 end
 
 function update_generator_adv!(opt, dscr, gen, prev_adv, noise_adv)
     @eval Flux.istraining() = true
     ps = params(gen)
-    loss, back = Zygote.pullback(ps) do
+    grad = gradient(ps) do
         d_g_fake_adv = dscr(gen(prev_adv, noise_adv))
         generator_adv_loss(d_g_fake_adv)
     end
-    grad = back(Zygote.sensitivity(loss))
     update!(opt, ps, grad)
     @eval Flux.istraining() = false
-    return loss::Float32
 end
 
 """
@@ -63,29 +57,35 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     # training
     # prev_rec is only used to infer array type
 
-    loss_dscr = loss_gen_adv = loss_gen_rec = 0f0
-
     # discriminator
-    for _ in 1:loop_dscr
+    foreach(1:loop_dscr) do _
         noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
         g_fake_adv = genp(noise_adv, st, false)
 
         # add noise to real
         # real_noise = 0.5f0 * amplifiers[st] * randn!(similar(real_img))
-        # loss_dscr = update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
+        # update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
 
-        loss_dscr = update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
+        update_discriminator!(opt_dscr, dscr, real_img, g_fake_adv)
     end
 
     # generator
-    for _ in 1:loop_gen
+    foreach(1:loop_gen) do _
         # adv
         noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
         prev_adv = genp(noise_adv, st - 1, true)
-        loss_gen_adv = update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv))
+        update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv))
         # rec
-        loss_gen_rec = update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
+        # update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
     end
+
+    noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
+    g_fake_adv = genp(noise_adv, st, false)
+    loss_dscr = discriminator_loss(dscr(real_img), dscr(g_fake_adv))
+    d_g_fake_adv = dscr(g_fake_adv)
+    loss_gen_adv = generator_adv_loss(d_g_fake_adv)
+    g_fake_rec = genp.chains[st](prev_rec, noise_rec)
+    loss_gen_rec = alpha * generator_rec_loss(real_img, g_fake_rec) 
 
     return loss_dscr, loss_gen_adv, loss_gen_rec
 end

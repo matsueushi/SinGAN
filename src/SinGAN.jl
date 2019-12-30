@@ -9,7 +9,6 @@ using Flux.Optimise: update!
 using JSON
 using OrderedCollections
 using Random
-using Zygote
 
 export DiscriminatorPyramid, GeneratorPyramid, NoiseConnection, HyperParams, image_shapes, setup_models,
         load_model_params!, train!, load_hyperparams, save_hyperparams
