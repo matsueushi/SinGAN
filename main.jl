@@ -8,7 +8,7 @@ function main()
     hp = load_hyperparams("hyperparams.json")
     # save_hyperparams("hyperparams.json", hp)
     dscrp, genp = setup_models(hp)
-    img_name = "lightning1.png"
+    img_name = "artwork.jpg"
     orig_rgb_img = load(img_name)
     orig_img = SinGAN.rgb_to_array(orig_rgb_img) |> gpu
     img_shapes = image_shapes(hp)
@@ -16,7 +16,7 @@ function main()
     # load_model_params!(dscrp, genp, Base.length(img_shapes))
     
     amplifiers, z_rec = train!(dscrp, genp, real_img_p, hp)
-    generate_animation(genp, 0.5f0, 0.5f0, first(amplifiers), z_rec, )
+    generate_animation(genp, 0.1f0, 0.9f0, first(amplifiers), z_rec)
 end
 
 main()

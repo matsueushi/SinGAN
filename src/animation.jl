@@ -15,6 +15,6 @@ function generate_animation(genp::GeneratorPyramid, α, β, amplifier, z_rec)
 
         z[1] = z_curr
         img = genp(z, st, false)
-        save_array_as_image(animation_savepath(i), img)
+        save_array_as_image(animation_savepath(i), view(img, :, :, :, 1))
     end
 end

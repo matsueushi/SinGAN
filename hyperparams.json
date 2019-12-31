@@ -1,9 +1,9 @@
 {
     "scale": 1.3333333333333333,
-    "min_size_x": 35,
+    "min_size_x": 25,
     "min_size_y": 25,
-    "img_size_x": 35,
-    "img_size_y": 25,
+    "img_size_x": 64,
+    "img_size_y": 64,
     "n_layers": 5,
     "max_epoch": 2000,
     "reduce_lr_epoch": 1600,

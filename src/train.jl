@@ -1,15 +1,15 @@
 """
     loss functions
 """
-function discriminator_loss(d_real, d_g_fake_adv)
+function discriminator_loss(d_real::AbstractArray, d_g_fake_adv::AbstractArray)
     real_loss = mse(1f0, mean(d_real; dims = (1, 2)))
     fake_loss = mse(0f0, mean(d_g_fake_adv; dims = (1, 2)))
     return real_loss + fake_loss
 end
 
-generator_adv_loss(d_g_fake_adv) = mse(1f0, mean(d_g_fake_adv; dims = (1, 2)))
+generator_adv_loss(d_g_fake_adv::AbstractArray) = mse(1f0, mean(d_g_fake_adv; dims = (1, 2)))
 
-generator_rec_loss(real_img, g_fake_rec) = mse(real_img, g_fake_rec)
+generator_rec_loss(real_img::AbstractArray, g_fake_rec::AbstractArray) = mse(real_img, g_fake_rec)
 
 """
     update discriminator
@@ -73,7 +73,6 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
     foreach(1:loop_dscr) do _
         noise_adv = build_noise_pyramid(prev_rec, genp.noise_shapes[1:st], amplifiers)
         g_fake_adv = genp(noise_adv, st, false)
-
         # add noise to real
         # real_noise = 0.5f0 * amplifiers[st] * randn!(similar(real_img))
         # update_discriminator!(opt_dscr, dscr, real_img + real_noise, g_fake_adv)
@@ -89,7 +88,6 @@ function train_epoch!(opt_dscr, opt_gen, st, loop_dscr, loop_gen,
         # update_generator_adv!(opt_gen, dscr, genp.chains[st], prev_adv, last(noise_adv))
         # rec
         # update_generator_rec!(opt_gen, genp.chains[st], real_img, prev_rec, noise_rec, alpha)
-
         update_generator!(opt_gen, dscr, genp.chains[st], real_img, prev_rec, prev_adv, noise_rec, last(noise_adv), alpha)
     end
 
@@ -142,7 +140,7 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid,
         save_noise_amplifiers(st, amp)
         @info "Noise amplifier = $(amp)"
 
-        for ep in 1:hp.max_epoch
+        @time for ep in 1:hp.max_epoch
             # reduce learnint rate
             if ep == hp.reduce_lr_epoch
                 @info "Reduce learning rate"
