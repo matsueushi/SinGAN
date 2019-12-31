@@ -8,7 +8,10 @@ function main()
     hp = load_hyperparams("hyperparams.json")
     # save_hyperparams("hyperparams.json", hp)
     dscrp, genp = setup_models(hp)
-    img_name = "artwork.jpg"
+    @info dscrp
+    @info genp
+
+    img_name = "floral_shoppe.jpg"
     orig_rgb_img = load(img_name)
     orig_img = SinGAN.rgb_to_array(orig_rgb_img) |> gpu
     img_shapes = image_shapes(hp)

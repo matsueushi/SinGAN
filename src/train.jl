@@ -115,9 +115,6 @@ function train!(dscrp::DiscriminatorPyramid, genp::GeneratorPyramid,
     generate_dirs(stages)
     save_scaled_reals(real_img_p)
 
-    @info dscrp
-    @info genp
-
     amplifiers = Float32[]
 
     # fixed noise for rec
