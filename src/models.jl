@@ -1,3 +1,7 @@
+"""
+Convolutional block
+"""
+
 # Re-define leakyrelu function
 # https://github.com/FluxML/Flux.jl/issues/963
 myleakyrelu(x::Real, a = oftype(x / one(x), 0.01)) = max(a * x, x / one(x))
