@@ -7,7 +7,7 @@ expand_dim(dim...) = (dim..., 3, 1)
 zeros_like(T::Type, dims...) = fill!(similar(T, dims...), 0f0)
 zeros_like(xs::AbstractArray, dims...) = fill!(similar(xs, dims...), 0f0)
 randn_like(T::Type, dims...) = randn!(similar(T, dims...))
-randn_like(xs::AbstractArray, dims...) where {T} = randn!(similar(xs, dims...))
+randn_like(xs::AbstractArray, dims...) = randn!(similar(xs, dims...))
 
 """
     size
